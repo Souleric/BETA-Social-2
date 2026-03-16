@@ -1399,53 +1399,108 @@
 
     .main { margin-left: 0; }
 
-    .topbar { padding: 0 16px; gap: 10px; }
-    .topbar-title { font-size: 16px; }
+    .topbar { padding: 0 14px; gap: 8px; }
+    .topbar-title { font-size: 15px; }
 
     .role-switcher { display: none; }
     .btn-primary { font-size: 12px; padding: 7px 12px; }
 
-    .content { padding: 16px; }
+    .content { padding: 14px; }
 
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+    /* Stats */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { padding: 16px; }
+    .stat-value { font-size: 24px; }
 
-    .clients-grid {
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
+    /* Clients grid */
+    .clients-grid { grid-template-columns: 1fr; gap: 10px; }
 
     .section-header { flex-wrap: wrap; gap: 8px; }
 
-    /* Content list table → scrollable */
-    .content-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .content-table { min-width: 600px; }
+    /* ── Content rows: reformat as mobile cards ── */
+    .list-header { display: none; }
+    .content-row-main {
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      gap: 4px;
+      align-items: flex-start;
+    }
+    .row-title { width: 100%; order: 1; font-size: 13px; padding-right: 24px; }
+    .row-status { width: auto; order: 2; }
+    .row-type { width: auto; order: 3; font-size: 11px; }
+    .row-date { width: auto; order: 4; font-size: 11px; }
+    .row-actions { width: auto; order: 5; margin-left: auto; }
+    .expand-icon { position: absolute; right: 14px; top: 14px; }
+    .content-row-main { position: relative; }
+
+    /* Detail expand */
+    .detail-grid { grid-template-columns: 1fr; gap: 12px; }
+    .detail-actions { flex-wrap: wrap; gap: 6px; }
+    .detail-actions .btn { flex: 1; min-width: 120px; justify-content: center; text-align: center; }
+    .content-row-detail { padding: 0 14px 14px; }
+
+    /* Form rows */
+    .form-row { grid-template-columns: 1fr; gap: 10px; }
+
+    /* Modal */
+    .modal {
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      border-radius: 20px 20px 0 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    .modal-overlay { align-items: flex-end; }
+    .modal-footer { flex-wrap: wrap; gap: 8px; }
+    .modal-footer .btn { flex: 1; min-width: 100px; text-align: center; justify-content: center; }
 
     /* Calendar */
-    .calendar-grid { font-size: 11px; }
-    .cal-day { min-height: 60px; padding: 4px; }
-    .cal-event { font-size: 10px; padding: 2px 4px; }
+    .calendar-section { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .calendar-grid { min-width: 480px; font-size: 10px; }
+    .cal-day { min-height: 54px; padding: 3px; }
+    .cal-day-num { font-size: 10px; width: 18px; height: 18px; }
+    .cal-event { font-size: 9px; padding: 1px 3px; }
+    .calendar-header { padding: 12px 14px; }
 
-    /* Client detail columns → stack */
+    /* Filter chips — horizontal scroll */
+    .cal-client-filter { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+    .proj-legend { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+
+    /* Pipeline badges — scroll */
+    .pipeline-row { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+
+    /* Client detail header */
     .client-detail-grid { grid-template-columns: 1fr !important; }
-
-    /* Modals → full width */
-    .modal { width: calc(100% - 32px); margin: 16px; max-height: 90vh; overflow-y: auto; }
+    .cdc-header { flex-wrap: wrap; gap: 10px; }
+    .cdc-actions { width: 100%; }
+    .cdc-meta { flex-wrap: wrap; gap: 6px; }
 
     /* Reports */
     .report-grid { grid-template-columns: 1fr !important; }
+    .report-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-    /* Team table → scrollable */
-    .team-table-wrap { overflow-x: auto; }
+    /* Team table */
+    .team-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Project card */
+    .project-card { padding: 14px; }
+    .project-header-row { flex-wrap: wrap; }
+    .proj-content-list-header { display: none; }
+
+    /* Notifications */
+    .notif-card { padding: 14px; }
   }
 
   @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
     .stat-value { font-size: 22px; }
     .topbar-title { font-size: 14px; }
+    .content { padding: 12px; }
   }
 
   /* ─── LOGIN SCREEN ─────────────────────────────────── */
@@ -2079,18 +2134,20 @@
       <div class="section-header" style="margin-top:24px">
         <div class="section-title">Client Reports</div>
       </div>
-      <div class="list-view-section">
-        <div class="list-header">
-          <div class="list-col col-title">Client</div>
-          <div class="list-col" style="width:140px">Account Manager</div>
-          <div class="list-col" style="width:80px">Agreed</div>
-          <div class="list-col" style="width:80px">Created</div>
-          <div class="list-col" style="width:80px">Approved</div>
-          <div class="list-col" style="width:80px">Published</div>
-          <div class="list-col" style="width:80px">Pending</div>
-          <div class="list-col col-actions">Report</div>
+      <div class="report-table-wrap">
+        <div class="list-view-section" style="min-width:640px">
+          <div class="list-header">
+            <div class="list-col col-title">Client</div>
+            <div class="list-col" style="width:140px">Account Manager</div>
+            <div class="list-col" style="width:80px">Agreed</div>
+            <div class="list-col" style="width:80px">Created</div>
+            <div class="list-col" style="width:80px">Approved</div>
+            <div class="list-col" style="width:80px">Published</div>
+            <div class="list-col" style="width:80px">Pending</div>
+            <div class="list-col col-actions">Report</div>
+          </div>
+          <div id="report-client-list"></div>
         </div>
-        <div id="report-client-list"></div>
       </div>
     </div>
 
@@ -2706,7 +2763,7 @@ function renderProjectsSection() {
               <div style="display:flex;gap:6px;margin-top:2px">${addContentBtn}${editBtn}</div>
             </div>
           </div>
-          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border1)">${pipelineHtml}</div>
+          <div class="pipeline-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border1)">${pipelineHtml}</div>
         </div>
       </div>
       <div class="project-content-section">
