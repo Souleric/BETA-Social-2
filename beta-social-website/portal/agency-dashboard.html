@@ -2115,7 +2115,7 @@
             <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">📢 Client Portal Ad Banner</div>
             <div style="font-size:12px;color:var(--text3)">Sliding text shown to all client users at the top of their dashboard.</div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="openEditAdBanner()">Edit Banner</button>
+          <button id="edit-banner-btn" class="btn btn-outline btn-sm" onclick="openEditAdBanner()">Edit Banner</button>
         </div>
         <div style="padding:10px 16px;background:linear-gradient(90deg,#6c8fff,#a78bfa);border-radius:8px;overflow:hidden">
           <div id="ad-preview-admin" style="color:#fff;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
@@ -3349,8 +3349,11 @@ function renderTeamList() {
   if (!el) return;
   const preview = document.getElementById('ad-preview-admin');
   if (preview) preview.textContent = adText;
+  const isMasterAdmin = currentMember?.role === 'master_admin';
   const dz = document.getElementById('danger-zone-section');
-  if (dz) dz.style.display = currentMember?.role === 'master_admin' ? '' : 'none';
+  if (dz) dz.style.display = isMasterAdmin ? '' : 'none';
+  const editBannerBtn = document.getElementById('edit-banner-btn');
+  if (editBannerBtn) editBannerBtn.style.display = isMasterAdmin ? '' : 'none';
   const roleColors = {
     master_admin:'badge-active', admin:'badge-active',
     account_manager:'badge-review', client:'badge-draft', designer:'badge-scheduled'
