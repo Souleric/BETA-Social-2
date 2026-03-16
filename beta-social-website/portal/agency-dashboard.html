@@ -1959,7 +1959,7 @@
       <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="login-error" id="login-error"></div>
-    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
   </div>
 </div>
 
@@ -2346,38 +2346,65 @@ function clearAllContent() {
   showToast('All content cleared.');
 }
 
+// ─── FIREBASE SYNC ───────────────────────────────────────────────────────────
+const FB_URL = 'https://beta-social-website-default-rtdb.asia-southeast1.firebasedatabase.app/betasocial.json';
+
+function saveData() {
+  const data = { team, clients, contents, projects, adText };
+  // Save locally as offline backup
+  try { localStorage.setItem('betasocial_backup', JSON.stringify(data)); } catch(e) {}
+  // Sync to Firebase (fire and forget)
+  fetch(FB_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).catch(e => console.warn('Firebase save failed:', e));
+}
+
+async function loadData() {
+  const loginBtn = document.getElementById('login-btn');
+  if (loginBtn) { loginBtn.disabled = true; loginBtn.textContent = 'Loading...'; }
+  try {
+    const res = await fetch(FB_URL);
+    const data = await res.json();
+    if (data && typeof data === 'object' && (data.team || data.clients)) {
+      if (Array.isArray(data.team) && data.team.length) team = data.team;
+      if (data.clients && Object.keys(data.clients).length) clients = data.clients;
+      if (Array.isArray(data.contents)) contents = data.contents;
+      if (Array.isArray(data.projects)) projects = data.projects;
+      if (data.adText !== undefined) adText = data.adText;
+    } else {
+      // First time — push defaults to Firebase
+      saveData();
+    }
+  } catch(e) {
+    // Offline fallback: load from local backup
+    console.warn('Firebase unavailable, using local backup');
+    try {
+      const backup = localStorage.getItem('betasocial_backup');
+      if (backup) {
+        const d = JSON.parse(backup);
+        if (d.team) team = d.team;
+        if (d.clients) clients = d.clients;
+        if (d.contents) contents = d.contents;
+        if (d.projects) projects = d.projects;
+        if (d.adText !== undefined) adText = d.adText;
+      }
+    } catch(e2) {}
+  } finally {
+    if (loginBtn) { loginBtn.disabled = false; loginBtn.textContent = 'Sign In'; }
+  }
+}
+
 function resetAllData() {
   if (!confirm('Reset EVERYTHING — all clients, projects, and content will be wiped. Are you sure?')) return;
   if (!confirm('This is permanent. Click OK to confirm full reset.')) return;
-  localStorage.removeItem('betasocial_contents');
-  localStorage.removeItem('betasocial_clients');
-  localStorage.removeItem('betasocial_projects');
-  localStorage.removeItem('betasocial_team');
+  fetch(FB_URL, { method: 'DELETE' }).catch(e => {});
+  localStorage.removeItem('betasocial_backup');
   location.reload();
 }
 
-function saveData() {
-  localStorage.setItem('betasocial_contents', JSON.stringify(contents));
-  localStorage.setItem('betasocial_clients', JSON.stringify(clients));
-  localStorage.setItem('betasocial_projects', JSON.stringify(projects));
-  localStorage.setItem('betasocial_team', JSON.stringify(team));
-  localStorage.setItem('betasocial_adtext', adText);
-}
-function loadData() {
-  try {
-    const c = localStorage.getItem('betasocial_contents');
-    const cl = localStorage.getItem('betasocial_clients');
-    const pr = localStorage.getItem('betasocial_projects');
-    const tm = localStorage.getItem('betasocial_team');
-    const ad = localStorage.getItem('betasocial_adtext');
-    if (c) contents = JSON.parse(c);
-    if (cl) clients = JSON.parse(cl);
-    if (pr) projects = JSON.parse(pr);
-    if (tm) team = JSON.parse(tm);
-    if (ad) adText = ad;
-  } catch(e) {}
-}
-loadData();
+(async () => { await loadData(); })();
 
 // ─── NAVIGATION ──────────────────────────────────────────────────────────────
 function showView(view) {
