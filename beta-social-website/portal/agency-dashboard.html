@@ -1916,38 +1916,8 @@
               <div class="cdc-meta-item">📅 <strong id="cd-posts">12 posts/month</strong></div>
               <div class="cdc-meta-item">📁 <a href="#" class="proposal-link" id="cd-proposal">📄 View Proposal</a></div>
             </div>
-            <div class="approval-flow" style="margin-top:12px">
-              <div>
-                <div class="flow-step">
-                  <div class="flow-dot done">✓</div>
-                </div>
-                <div class="flow-label">Proposal</div>
-              </div>
-              <div class="flow-line"></div>
-              <div>
-                <div class="flow-step">
-                  <div class="flow-dot done">✓</div>
-                </div>
-                <div class="flow-label">Direction</div>
-              </div>
-              <div class="flow-line"></div>
-              <div>
-                <div class="flow-step">
-                  <div class="flow-dot active">●</div>
-                </div>
-                <div class="flow-label">Artwork</div>
-              </div>
-              <div class="flow-line"></div>
-              <div>
-                <div class="flow-step">
-                  <div class="flow-dot pending">○</div>
-                </div>
-                <div class="flow-label">Schedule</div>
-              </div>
-            </div>
           </div>
           <div class="cdc-actions">
-            <button class="btn btn-outline btn-sm" onclick="openModal('new-content')">＋ Add Content</button>
             <button class="btn btn-outline btn-sm" onclick="openEditClient()">Edit</button>
           </div>
         </div>
@@ -2552,23 +2522,42 @@ function renderProjectsSection() {
     const cl = clients[currentClient] || {};
     const agreed = cl.posts || 10;
     const contentCount = p.type === 'retainer' ? `${projContents.length} / ${agreed} posts` : `${projContents.length} items`;
+    const pipelineStages = [
+      { key: 'draft',             label: 'Draft',     cls: 'badge-draft'     },
+      { key: 'pending-direction', label: 'Direction', cls: 'badge-review'    },
+      { key: 'pending-artwork',   label: 'Artwork',   cls: 'badge-pending'   },
+      { key: 'approved',          label: 'Approved',  cls: 'badge-approved'  },
+      { key: 'scheduled',         label: 'Scheduled', cls: 'badge-scheduled' },
+      { key: 'published',         label: 'Published', cls: 'badge-published' },
+    ];
+    const pipelineHtml = pipelineStages.map((s, i) => {
+      const n = projContents.filter(c => c.status === s.key).length;
+      const dim = n === 0 ? 'opacity:0.28;' : '';
+      return `<span style="${dim}"><span class="status-badge ${s.cls}">${s.label}${n > 0 ? ' <strong style="margin-left:3px">'+n+'</strong>' : ''}</span></span>`
+        + (i < pipelineStages.length - 1 ? `<span style="color:var(--text3);font-size:10px;margin:0 1px">→</span>` : '');
+    }).join('');
     return `<div class="project-card" id="project-card-${p.id}">
       <div class="project-header-row">
         <div class="project-color-stripe" style="background:${pt.color}"></div>
-        <div class="project-info">
-          <div class="project-name">${pt.icon} ${p.name}</div>
-          <div class="project-dates">${startFmt} → ${endFmt}</div>
-          <div class="project-timeline-wrap">
-            <div class="project-timeline-bar">
-              <div class="project-timeline-fill" style="width:${pct}%;background:${pt.color}"></div>
+        <div class="project-info" style="flex:1">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div>
+              <div class="project-name">${pt.icon} ${p.name}</div>
+              <div class="project-dates">${startFmt} → ${endFmt}</div>
+              <div class="project-timeline-wrap">
+                <div class="project-timeline-bar">
+                  <div class="project-timeline-fill" style="width:${pct}%;background:${pt.color}"></div>
+                </div>
+                <span class="project-pct">${pct}%</span>
+              </div>
             </div>
-            <span class="project-pct">${pct}%</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+              <span class="proj-type-badge" style="background:${pt.bg};color:${pt.color}">${pt.label}</span>
+              <span style="font-size:11px;color:${statusColor};font-family:var(--font-mono);font-weight:600">● ${statusLabel}</span>
+              <div style="display:flex;gap:6px;margin-top:2px">${addContentBtn}${editBtn}</div>
+            </div>
           </div>
-        </div>
-        <div class="project-meta-right">
-          <span class="proj-type-badge" style="background:${pt.bg};color:${pt.color}">${pt.label}</span>
-          <span style="font-size:11px;color:${statusColor};font-family:var(--font-mono);font-weight:600">● ${statusLabel}</span>
-          <div style="display:flex;gap:6px;margin-top:2px">${addContentBtn}${editBtn}</div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border1)">${pipelineHtml}</div>
         </div>
       </div>
       <div class="project-content-section">
