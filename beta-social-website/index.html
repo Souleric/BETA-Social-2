@@ -84,9 +84,17 @@
       </p>
     </div>
     <div class="bento-grid">
-      <div class="bento-item box-1">
+      <div class="bento-item box-1" id="smm-card">
         <h3>Social Media Management</h3>
         <p>Strategic content planning and full channel management.</p>
+        <div class="card-dropdown">
+          <ul class="platform-list">
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> Facebook</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg> Instagram</li>
+            <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg> TikTok</li>
+          </ul>
+          <p class="reporting-note">✓ Includes comprehensive monthly reporting</p>
+        </div>
       </div>
       <div class="bento-item box-2">
         <h3>Content Creation</h3>
@@ -100,12 +108,81 @@
         <h3>Website & Landing Pages</h3>
         <p>Modern web experiences designed to elevate your digital presence.</p>
       </div>
-      <div class="bento-item box-5">
+      <div class="bento-item box-5" id="onground-card" style="cursor: pointer;">
         <h3>On-Ground Campaigns</h3>
         <p>Physical activations, event marketing, and experiential brand campaigns.</p>
+        <p class="click-to-view" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem; opacity: 0.8;">Click to view services →</p>
       </div>
     </div>
   </section>
+
+  <!-- On-Ground Campaigns Modal -->
+  <div class="service-modal" id="onground-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close modal">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+      
+      <div class="modal-header">
+        <p class="section-label" style="margin-bottom: 0.5rem;">Experiential Marketing</p>
+        <h2>On-Ground Campaigns & Events</h2>
+        <p style="color: var(--text-secondary); max-width: 600px; line-height: 1.6;">We bridge the gap between digital and physical, creating immersive brand experiences that engage audiences and drive real-world impact.</p>
+      </div>
+
+      <div class="modal-body">
+        <div class="service-list-container">
+          <h3>Our Services</h3>
+          <ul class="premium-list">
+            <li>
+              <div class="list-num">01</div>
+              <div class="list-text">
+                <h4>Event Booth Setup</h4>
+                <p>End-to-end logistics, structural fabrication, and seamless on-site assembly.</p>
+              </div>
+            </li>
+            <li>
+              <div class="list-num">02</div>
+              <div class="list-text">
+                <h4>Event Booth Designs</h4>
+                <p>Premium, brand-aligned spatial design and 3D mockups.</p>
+              </div>
+            </li>
+            <li>
+              <div class="list-num">03</div>
+              <div class="list-text">
+                <h4>Engagement Activities</h4>
+                <p>Strategic, gamified, and interactive proposals to captivate attendees.</p>
+              </div>
+            </li>
+            <li>
+              <div class="list-num">04</div>
+              <div class="list-text">
+                <h4>KOL & KOC Activation</h4>
+                <p>Leveraging influencers to boost on-ground presence into online virality.</p>
+              </div>
+            </li>
+            <li>
+              <div class="list-num">05</div>
+              <div class="list-text">
+                <h4>Event Photography & Videography</h4>
+                <p>High-quality professional coverage to capture key moments and create premium post-event content.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="modal-images">
+          <div class="img-wrapper">
+            <img src="assets/images/booth_setup_premium_1773628866832.png" alt="Premium Event Booth Design">
+          </div>
+          <div class="img-wrapper">
+            <img src="assets/images/kol_engagement_premium_1773628886280.png" alt="KOL and KOC Engagement">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Process Steps -->
   <section id="process" class="process">

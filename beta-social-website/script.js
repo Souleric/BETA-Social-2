@@ -360,3 +360,32 @@ if (hamburger && navMenu) {
     });
   });
 }
+
+// Service Card Dropdown Toggle
+const smmCard = document.getElementById('smm-card');
+if (smmCard) {
+  smmCard.addEventListener('click', () => {
+    smmCard.classList.toggle('active');
+  });
+}
+
+// On-Ground Campaigns Modal Toggle
+const ongroundCard = document.getElementById('onground-card');
+const ongroundModal = document.getElementById('onground-modal');
+const modalCloseBtn = document.querySelector('.modal-close');
+const modalOverlay = document.querySelector('.modal-overlay');
+
+if (ongroundCard && ongroundModal) {
+  ongroundCard.addEventListener('click', () => {
+    ongroundModal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+  });
+
+  const closeModal = () => {
+    ongroundModal.classList.remove('active');
+    document.body.style.overflow = '';
+  };
+
+  modalCloseBtn.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', closeModal);
+}
