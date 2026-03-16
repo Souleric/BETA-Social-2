@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BETA Social">
+<meta name="mobile-web-app-capable" content="yes">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -45,14 +49,23 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  button, a, input, select, textarea { touch-action: manipulation; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    height: -webkit-fill-available;
+  }
 
   body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-body);
     min-height: 100vh;
+    min-height: -webkit-fill-available;
     display: flex;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
   }
 
   /* SIDEBAR */
@@ -157,6 +170,7 @@
 
   .sidebar-footer {
     padding: 16px 12px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
   }
 
@@ -233,6 +247,8 @@
     display: flex;
     align-items: center;
     padding: 0 28px;
+    padding-left: max(28px, env(safe-area-inset-left));
+    padding-right: max(28px, env(safe-area-inset-right));
     gap: 16px;
     position: sticky;
     top: 0;
@@ -1504,6 +1520,13 @@
 
     /* Notifications */
     .notif-card { padding: 14px; }
+  }
+
+  /* ─── SAFE AREA (Dynamic Island + Home Indicator) ── */
+  @supports (padding: env(safe-area-inset-top)) {
+    .main { padding-bottom: env(safe-area-inset-bottom); }
+    .modal-overlay { padding-bottom: env(safe-area-inset-bottom); }
+    #login-screen { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
   }
 
   @media (max-width: 480px) {
