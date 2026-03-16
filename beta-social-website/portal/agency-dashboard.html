@@ -2003,7 +2003,6 @@
         </div>
       </div>
 
-      <div id="cal-proj-filter-client" class="cal-client-filter"></div>
       <div class="proj-legend" id="proj-legend-client"></div>
       <div class="calendar-section">
         <div class="calendar-grid" id="cal-day-labels">
@@ -2030,7 +2029,6 @@
         </div>
       </div>
       <div id="cal-client-filter-bar" class="cal-client-filter"></div>
-      <div id="cal-proj-filter-bar" class="cal-client-filter" style="margin-top:-4px"></div>
       <div class="proj-legend" id="proj-legend-global"></div>
       <div class="calendar-section">
         <div class="calendar-grid">
@@ -2172,8 +2170,6 @@ let currentClient = null;
 let currentRole = 'admin';
 let calendarDate = new Date(2026, 2, 1); // March 2026
 let globalCalFilter = null;    // null = all visible clients; array of client keys
-let globalCalProjFilter = null; // null = all projects; array of project IDs
-let clientCalProjFilter = null; // null = all projects for current client; array of project IDs
 
 let clients = {
   luxe: { name:'Benzac', initials:'BZ', am:'Sarah Chen', posts:12, gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', proposal:'https://drive.google.com/file/example-luxe', contractStart:'2025-04-01', contractEnd:'2026-03-31' },
@@ -2556,7 +2552,14 @@ function renderProjLegend(containerId, clientFilter) {
     ? [...new Set(projects.filter(p => cfArr2.includes(p.clientId)).map(p => p.type))]
     : Object.keys(projectTypes);
   if (!relevantTypes.length) { legend.innerHTML = ''; return; }
-  legend.innerHTML = relevantTypes.map(k => {
+  const allVisible = relevantTypes.every(k => visibleProjTypes.has(k));
+  const allBtn = `<button class="proj-toggle-chip ${allVisible ? 'active' : ''}"
+    style="--chip-color:#888;--chip-bg:rgba(128,128,128,0.1)"
+    onclick="toggleAllProjTypes()" title="${allVisible ? 'Hide all' : 'Show all'}">
+    <span class="proj-legend-dot" style="background:${allVisible ? '#888' : 'var(--text3)'}"></span>
+    All Projects
+  </button>`;
+  legend.innerHTML = allBtn + relevantTypes.map(k => {
     const pt = projectTypes[k];
     if (!pt) return '';
     const active = visibleProjTypes.has(k);
@@ -2585,6 +2588,19 @@ function toggleProjType(type) {
   }
 }
 
+function toggleAllProjTypes() {
+  const allOn = Object.keys(projectTypes).every(k => visibleProjTypes.has(k));
+  if (allOn) { visibleProjTypes.clear(); }
+  else { Object.keys(projectTypes).forEach(k => visibleProjTypes.add(k)); }
+  if (currentView === 'client-detail') {
+    renderClientCalendar();
+    renderProjLegend('proj-legend-client', currentClient);
+  } else if (currentView === 'calendar') {
+    renderCalendar('calendar-body-global', globalCalFilter);
+    renderProjLegend('proj-legend-global', globalCalFilter);
+  }
+}
+
 function renderGlobalCalendar() {
   const visKeys = getVisibleClientKeys();
 
@@ -2604,44 +2620,12 @@ function renderGlobalCalendar() {
         }).join('');
   }
 
-  // Project filter bar (scoped to active client filter)
-  const projBar = document.getElementById('cal-proj-filter-bar');
-  if (projBar) {
-    const activeClientKeys = globalCalFilter && globalCalFilter.length ? globalCalFilter : visKeys;
-    const visProjs = projects.filter(p => activeClientKeys.includes(p.clientId));
-    if (visProjs.length) {
-      const allProjActive = !globalCalProjFilter;
-      projBar.innerHTML = `<button class="cal-client-pill all-pill${allProjActive ? ' active' : ''}" onclick="setGlobalCalProjAll()" style="font-size:11px">📂 All Projects</button>`
-        + visProjs.map(p => {
-            const pt = projectTypes[p.type] || {};
-            const cl = clients[p.clientId] || {};
-            const on = globalCalProjFilter && globalCalProjFilter.includes(p.id);
-            return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleGlobalCalProj('${p.id}')"
-              style="font-size:11px;${on ? `background:${pt.color||'#6c8fff'};border-color:transparent` : ''}">
-              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':(pt.color||'#6c8fff')}"></span>
-              ${p.name}<span style="opacity:0.6;margin-left:3px;font-size:10px">${cl.name||''}</span>
-            </button>`;
-          }).join('');
-    } else {
-      projBar.innerHTML = '';
-    }
-  }
-
-  renderCalendar('calendar-body-global', globalCalFilter, globalCalProjFilter);
+  renderCalendar('calendar-body-global', globalCalFilter);
   renderGlobalList();
   renderProjLegend('proj-legend-global', globalCalFilter);
 }
 
-function setCalClientAll() { globalCalFilter = null; globalCalProjFilter = null; renderGlobalCalendar(); }
-function setGlobalCalProjAll() { globalCalProjFilter = null; renderGlobalCalendar(); }
-function toggleGlobalCalProj(id) {
-  if (!globalCalProjFilter) { globalCalProjFilter = [id]; }
-  else if (globalCalProjFilter.includes(id)) {
-    globalCalProjFilter = globalCalProjFilter.filter(k => k !== id);
-    if (!globalCalProjFilter.length) globalCalProjFilter = null;
-  } else { globalCalProjFilter = [...globalCalProjFilter, id]; }
-  renderGlobalCalendar();
-}
+function setCalClientAll() { globalCalFilter = null; renderGlobalCalendar(); }
 
 function toggleCalClientFilter(key) {
   if (!globalCalFilter) { globalCalFilter = [key]; }
@@ -2959,36 +2943,8 @@ function renderClientDetail() {
 
 function renderClientCalendar() {
   if (!currentClient) return;
-  // Project filter bar for client detail
-  const bar = document.getElementById('cal-proj-filter-client');
-  if (bar) {
-    const clientProjs = projects.filter(p => p.clientId === currentClient);
-    if (clientProjs.length) {
-      const allActive = !clientCalProjFilter;
-      bar.innerHTML = `<button class="cal-client-pill all-pill${allActive ? ' active' : ''}" onclick="setClientCalProjAll()" style="font-size:11px">📂 All Projects</button>`
-        + clientProjs.map(p => {
-            const pt = projectTypes[p.type] || {};
-            const on = clientCalProjFilter && clientCalProjFilter.includes(p.id);
-            return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleClientCalProj('${p.id}')"
-              style="font-size:11px;${on ? `background:${pt.color||'#6c8fff'};border-color:transparent` : ''}">
-              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':(pt.color||'#6c8fff')}"></span>
-              ${pt.icon||''} ${p.name}
-            </button>`;
-          }).join('');
-    } else { bar.innerHTML = ''; }
-  }
-  renderCalendar('calendar-body', currentClient, clientCalProjFilter);
+  renderCalendar('calendar-body', currentClient);
   renderProjLegend('proj-legend-client', currentClient);
-}
-
-function setClientCalProjAll() { clientCalProjFilter = null; renderClientCalendar(); }
-function toggleClientCalProj(id) {
-  if (!clientCalProjFilter) { clientCalProjFilter = [id]; }
-  else if (clientCalProjFilter.includes(id)) {
-    clientCalProjFilter = clientCalProjFilter.filter(k => k !== id);
-    if (!clientCalProjFilter.length) clientCalProjFilter = null;
-  } else { clientCalProjFilter = [...clientCalProjFilter, id]; }
-  renderClientCalendar();
 }
 
 function renderContentList(filter='all') {
