@@ -2213,6 +2213,7 @@ let projects = [
 ];
 
 let contents = [];
+let currentMember = null;
 
 let team = [
   { id:'u1', name:'Admin User',    email:'admin@betasocial.com',    password:'123', role:'master_admin',   clients:['All'] },
@@ -2993,14 +2994,24 @@ function renderDesignerTasks() {
 }
 
 // ─── DYNAMIC RENDER ───────────────────────────────────────────────────────────
+function getVisibleClientKeys() {
+  if (!currentMember) return Object.keys(clients);
+  if (['master_admin','admin'].includes(currentMember.role)) return Object.keys(clients);
+  const assigned = currentMember.clients || [];
+  if (assigned.includes('All')) return Object.keys(clients);
+  // Match by client name
+  return Object.keys(clients).filter(k => assigned.includes(clients[k]?.name));
+}
+
 function renderDashboard() {
   const now = new Date();
   const thisMonth = now.toISOString().slice(0,7);
-  const allClients = Object.keys(clients);
-  const monthContents = contents.filter(c => c.date && c.date.startsWith(thisMonth));
-  const awaitingDir = contents.filter(c => c.status === 'pending-direction').length;
-  const awaitingArt = contents.filter(c => c.status === 'pending-artwork').length;
-  const scheduled = contents.filter(c => c.status === 'scheduled').length;
+  const allClients = getVisibleClientKeys();
+  const visibleContents = contents.filter(c => allClients.includes(c.client));
+  const monthContents = visibleContents.filter(c => c.date && c.date.startsWith(thisMonth));
+  const awaitingDir = visibleContents.filter(c => c.status === 'pending-direction').length;
+  const awaitingArt = visibleContents.filter(c => c.status === 'pending-artwork').length;
+  const scheduled = visibleContents.filter(c => c.status === 'scheduled').length;
 
   const statsEl = document.getElementById('dashboard-stats-grid');
   if (statsEl) {
@@ -3039,7 +3050,7 @@ function renderDashboard() {
 function renderClientsView() {
   const el = document.getElementById('clients-grid');
   if (!el) return;
-  const keys = Object.keys(clients);
+  const keys = getVisibleClientKeys();
   el.innerHTML = keys.map(k => clientCardHTML(k)).join('') ||
     `<div style="padding:60px;text-align:center;color:var(--text3);grid-column:1/-1">No clients yet. Click "＋ Add Client" to get started.</div>`;
 }
@@ -3125,8 +3136,10 @@ function renderTeamList() {
 function openEditMember(id) {
   const t = team.find(m => m.id === id);
   if (!t) return;
-  const clientOptions = ['<option value="All"' + (['All'].includes('All') && (t.clients||[]).includes('All') ? ' selected' : '') + '>All Clients</option>',
-    ...Object.entries(clients).map(([k,v]) => `<option value="${v.name}"${(t.clients||[]).includes(v.name)?' selected':''}>${v.name}</option>`)
+  const assigned = t.clients || [];
+  const clientOptions = [
+    `<option value="All"${assigned.includes('All')?' selected':''}>All Clients</option>`,
+    ...Object.entries(clients).map(([k,v]) => `<option value="${v.name}"${assigned.includes(v.name)?' selected':''}>${v.name}</option>`)
   ].join('');
   const roleOpts = [
     { value:'master_admin',    label:'Master Admin' },
@@ -3494,6 +3507,7 @@ function doLogin() {
   const member = team.find(m => m.email.toLowerCase() === input.toLowerCase() || m.name.toLowerCase() === input.toLowerCase());
   if (member && member.password === password) {
     errorEl.textContent = '';
+    currentMember = member;
     const roleSwitchMap = { master_admin:'admin', admin:'admin', account_manager:'am', designer:'designer', client:'client' };
     const switchTo = roleSwitchMap[member.role] || 'client';
     const initials = member.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
@@ -3502,17 +3516,24 @@ function doLogin() {
     document.getElementById('user-name-display').textContent = member.name;
     document.getElementById('user-role-display').textContent = member.role.replace(/_/g,' ');
     document.getElementById('login-screen').classList.add('hidden');
+    // client role: auto-open their first assigned client
+    if (member.role === 'client') {
+      const visKeys = getVisibleClientKeys();
+      if (visKeys.length === 1) { openClientView(visKeys[0]); }
+      else if (visKeys.length > 1) { showView('clients'); renderClientsView(); }
+    }
+    renderDashboard();
+    renderClientsView();
     return;
   }
   errorEl.textContent = 'Invalid email or password.';
 }
 
 function doLogout() {
-  // Clear fields for next login
+  currentMember = null;
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
   document.getElementById('login-error').textContent = '';
-  // Show login screen
   document.getElementById('login-screen').classList.remove('hidden');
   closeSidebar();
 }
