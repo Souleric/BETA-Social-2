@@ -1738,6 +1738,32 @@
   }
 
   /* Legend */
+  /* CALENDAR CLIENT FILTER */
+  .cal-client-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 14px;
+  }
+  .cal-client-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    border: 1.5px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    transition: all .15s;
+  }
+  .cal-client-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .cal-client-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cal-client-pill.all-pill.active { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+
   .proj-legend {
     display: flex;
     flex-wrap: wrap;
@@ -2002,6 +2028,7 @@
           <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">→</button>
         </div>
       </div>
+      <div id="cal-client-filter-bar" class="cal-client-filter"></div>
       <div class="proj-legend" id="proj-legend-global"></div>
       <div class="calendar-section">
         <div class="calendar-grid">
@@ -2142,6 +2169,7 @@ let previousView = 'dashboard';
 let currentClient = null;
 let currentRole = 'admin';
 let calendarDate = new Date(2026, 2, 1); // March 2026
+let globalCalFilter = null; // null = all visible clients; array of keys = filtered
 
 let clients = {
   luxe: { name:'Benzac', initials:'BZ', am:'Sarah Chen', posts:12, gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', proposal:'https://drive.google.com/file/example-luxe', contractStart:'2025-04-01', contractEnd:'2026-03-31' },
@@ -2446,13 +2474,14 @@ function renderCalendar(targetId, clientFilter) {
   const firstDay = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const today = new Date();
-  const filtered = contents.filter(c => (!clientFilter || c.client === clientFilter));
+  const cfArr = Array.isArray(clientFilter) ? (clientFilter.length ? clientFilter : null) : (clientFilter ? [clientFilter] : null);
+  const filtered = contents.filter(c => (!cfArr || cfArr.includes(c.client)));
 
   // Filter projects active during this month
   const monthStart = new Date(y, m, 1);
   const monthEnd   = new Date(y, m+1, 0);
   const activeProjs = projects.filter(p => {
-    if (clientFilter && p.clientId !== clientFilter) return false;
+    if (cfArr && !cfArr.includes(p.clientId)) return false;
     const ps = new Date(p.startDate + 'T00:00:00');
     const pe = new Date(p.endDate   + 'T00:00:00');
     return ps <= monthEnd && pe >= monthStart;
@@ -2484,7 +2513,7 @@ function renderCalendar(targetId, clientFilter) {
       const isEnd   = date.getTime() === pe.getTime() || isLastDay  || dow === 6;
       let pos = isStart && isEnd ? 'alone' : isStart ? 'start' : isEnd ? 'end' : 'middle';
       const showLabel = date.getTime() === ps.getTime() || (d === 1 && date > ps) || (dow === 0 && date > ps);
-      const clientName = !clientFilter ? ` <span class="band-client">${clients[p.clientId]?.name||''}</span>` : '';
+      const clientName = (!cfArr || cfArr.length > 1) ? ` <span class="band-client">${clients[p.clientId]?.name||''}</span>` : '';
       const label = showLabel ? `${pt.icon} ${p.name}${clientName}` : '';
       bandHtml += `<div class="cal-proj-band band-${pos}" style="background:${pt.bg};color:${pt.color}" title="${p.name}">${label}</div>`;
     });
@@ -2513,8 +2542,9 @@ function renderProjLegend(containerId, clientFilter) {
   const legend = document.getElementById(containerId);
   if (!legend) return;
   // For client view, only show types that exist for this client; for global show all
-  const relevantTypes = clientFilter
-    ? [...new Set(projects.filter(p => p.clientId === clientFilter).map(p => p.type))]
+  const cfArr2 = Array.isArray(clientFilter) ? (clientFilter.length ? clientFilter : null) : (clientFilter ? [clientFilter] : null);
+  const relevantTypes = cfArr2
+    ? [...new Set(projects.filter(p => cfArr2.includes(p.clientId)).map(p => p.type))]
     : Object.keys(projectTypes);
   if (!relevantTypes.length) { legend.innerHTML = ''; return; }
   legend.innerHTML = relevantTypes.map(k => {
@@ -2541,15 +2571,49 @@ function toggleProjType(type) {
     renderCalendar('calendar-body', currentClient);
     renderProjLegend('proj-legend-client', currentClient);
   } else if (currentView === 'calendar') {
-    renderCalendar('calendar-body-global', null);
-    renderProjLegend('proj-legend-global', null);
+    renderCalendar('calendar-body-global', globalCalFilter);
+    renderProjLegend('proj-legend-global', globalCalFilter);
   }
 }
 
 function renderGlobalCalendar() {
-  renderCalendar('calendar-body-global', null);
+  // Build client filter bar
+  const bar = document.getElementById('cal-client-filter-bar');
+  if (bar) {
+    const visKeys = getVisibleClientKeys();
+    const allActive = !globalCalFilter;
+    bar.innerHTML = `<button class="cal-client-pill all-pill${allActive ? ' active' : ''}" onclick="setCalClientAll()">● All Clients</button>`
+      + visKeys.map(k => {
+          const cl = clients[k]; if (!cl) return '';
+          const on = globalCalFilter && globalCalFilter.includes(k);
+          const grad = cl.gradient || 'linear-gradient(135deg,#6c8fff,#a78bfa)';
+          return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleCalClientFilter('${k}')"
+            style="${on ? `background:${cl.gradient};border-color:transparent` : ''}">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':cl.gradient}"></span>
+            ${cl.name}
+          </button>`;
+        }).join('');
+  }
+  renderCalendar('calendar-body-global', globalCalFilter);
   renderGlobalList();
-  renderProjLegend('proj-legend-global', null);
+  renderProjLegend('proj-legend-global', globalCalFilter);
+}
+
+function setCalClientAll() {
+  globalCalFilter = null;
+  renderGlobalCalendar();
+}
+
+function toggleCalClientFilter(key) {
+  if (!globalCalFilter) {
+    globalCalFilter = [key];
+  } else if (globalCalFilter.includes(key)) {
+    globalCalFilter = globalCalFilter.filter(k => k !== key);
+    if (!globalCalFilter.length) globalCalFilter = null;
+  } else {
+    globalCalFilter = [...globalCalFilter, key];
+  }
+  renderGlobalCalendar();
 }
 
 // ─── PROJECTS SECTION ─────────────────────────────────────────────────────────
@@ -2773,11 +2837,15 @@ function deleteProject(projId) {
 
 function renderGlobalList() {
   const list = document.getElementById('content-list-global');
-  const sorted = [...contents].sort((a,b)=>a.date.localeCompare(b.date));
+  if (!list) return;
+  const cfArr = globalCalFilter && globalCalFilter.length ? globalCalFilter : getVisibleClientKeys();
+  const sorted = [...contents]
+    .filter(c => cfArr.includes(c.client))
+    .sort((a,b)=>a.date.localeCompare(b.date));
   list.innerHTML = sorted.map(c => {
     const cl = clients[c.client] || {};
     return contentRowHTML(c, cl.name||c.client, true);
-  }).join('');
+  }).join('') || `<div style="padding:32px;text-align:center;color:var(--text3)">No content for selected clients.</div>`;
 }
 
 // ─── CLIENT DETAIL ────────────────────────────────────────────────────────────
