@@ -2003,6 +2003,7 @@
         </div>
       </div>
 
+      <div id="cal-proj-filter-client" class="cal-client-filter"></div>
       <div class="proj-legend" id="proj-legend-client"></div>
       <div class="calendar-section">
         <div class="calendar-grid" id="cal-day-labels">
@@ -2029,6 +2030,7 @@
         </div>
       </div>
       <div id="cal-client-filter-bar" class="cal-client-filter"></div>
+      <div id="cal-proj-filter-bar" class="cal-client-filter" style="margin-top:-4px"></div>
       <div class="proj-legend" id="proj-legend-global"></div>
       <div class="calendar-section">
         <div class="calendar-grid">
@@ -2169,7 +2171,9 @@ let previousView = 'dashboard';
 let currentClient = null;
 let currentRole = 'admin';
 let calendarDate = new Date(2026, 2, 1); // March 2026
-let globalCalFilter = null; // null = all visible clients; array of keys = filtered
+let globalCalFilter = null;    // null = all visible clients; array of client keys
+let globalCalProjFilter = null; // null = all projects; array of project IDs
+let clientCalProjFilter = null; // null = all projects for current client; array of project IDs
 
 let clients = {
   luxe: { name:'Benzac', initials:'BZ', am:'Sarah Chen', posts:12, gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', proposal:'https://drive.google.com/file/example-luxe', contractStart:'2025-04-01', contractEnd:'2026-03-31' },
@@ -2462,11 +2466,11 @@ function checkContractExpiry() { renderNotifications(); }
 // ─── CALENDAR ─────────────────────────────────────────────────────────────────
 function changeMonth(dir) {
   calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + dir, 1);
-  if (currentView === 'client-detail') renderCalendar('calendar-body', currentClient);
+  if (currentView === 'client-detail') renderClientCalendar();
   if (currentView === 'calendar') renderGlobalCalendar();
 }
 
-function renderCalendar(targetId, clientFilter) {
+function renderCalendar(targetId, clientFilter, projFilter) {
   const y = calendarDate.getFullYear(), m = calendarDate.getMonth();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const labelId = targetId === 'calendar-body' ? 'cal-month-label' : 'cal-month-label2';
@@ -2475,13 +2479,18 @@ function renderCalendar(targetId, clientFilter) {
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const today = new Date();
   const cfArr = Array.isArray(clientFilter) ? (clientFilter.length ? clientFilter : null) : (clientFilter ? [clientFilter] : null);
-  const filtered = contents.filter(c => (!cfArr || cfArr.includes(c.client)));
+  const pfArr = projFilter && projFilter.length ? projFilter : null;
+  const filtered = contents.filter(c =>
+    (!cfArr || cfArr.includes(c.client)) &&
+    (!pfArr || !c.projectId || pfArr.includes(c.projectId))
+  );
 
   // Filter projects active during this month
   const monthStart = new Date(y, m, 1);
   const monthEnd   = new Date(y, m+1, 0);
   const activeProjs = projects.filter(p => {
     if (cfArr && !cfArr.includes(p.clientId)) return false;
+    if (pfArr && !pfArr.includes(p.id)) return false;
     const ps = new Date(p.startDate + 'T00:00:00');
     const pe = new Date(p.endDate   + 'T00:00:00');
     return ps <= monthEnd && pe >= monthStart;
@@ -2568,7 +2577,7 @@ function toggleProjType(type) {
     visibleProjTypes.add(type);
   }
   if (currentView === 'client-detail') {
-    renderCalendar('calendar-body', currentClient);
+    renderClientCalendar();
     renderProjLegend('proj-legend-client', currentClient);
   } else if (currentView === 'calendar') {
     renderCalendar('calendar-body-global', globalCalFilter);
@@ -2577,16 +2586,16 @@ function toggleProjType(type) {
 }
 
 function renderGlobalCalendar() {
-  // Build client filter bar
+  const visKeys = getVisibleClientKeys();
+
+  // Client filter bar
   const bar = document.getElementById('cal-client-filter-bar');
   if (bar) {
-    const visKeys = getVisibleClientKeys();
     const allActive = !globalCalFilter;
     bar.innerHTML = `<button class="cal-client-pill all-pill${allActive ? ' active' : ''}" onclick="setCalClientAll()">● All Clients</button>`
       + visKeys.map(k => {
           const cl = clients[k]; if (!cl) return '';
           const on = globalCalFilter && globalCalFilter.includes(k);
-          const grad = cl.gradient || 'linear-gradient(135deg,#6c8fff,#a78bfa)';
           return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleCalClientFilter('${k}')"
             style="${on ? `background:${cl.gradient};border-color:transparent` : ''}">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':cl.gradient}"></span>
@@ -2594,25 +2603,53 @@ function renderGlobalCalendar() {
           </button>`;
         }).join('');
   }
-  renderCalendar('calendar-body-global', globalCalFilter);
+
+  // Project filter bar (scoped to active client filter)
+  const projBar = document.getElementById('cal-proj-filter-bar');
+  if (projBar) {
+    const activeClientKeys = globalCalFilter && globalCalFilter.length ? globalCalFilter : visKeys;
+    const visProjs = projects.filter(p => activeClientKeys.includes(p.clientId));
+    if (visProjs.length) {
+      const allProjActive = !globalCalProjFilter;
+      projBar.innerHTML = `<button class="cal-client-pill all-pill${allProjActive ? ' active' : ''}" onclick="setGlobalCalProjAll()" style="font-size:11px">📂 All Projects</button>`
+        + visProjs.map(p => {
+            const pt = projectTypes[p.type] || {};
+            const cl = clients[p.clientId] || {};
+            const on = globalCalProjFilter && globalCalProjFilter.includes(p.id);
+            return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleGlobalCalProj('${p.id}')"
+              style="font-size:11px;${on ? `background:${pt.color||'#6c8fff'};border-color:transparent` : ''}">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':(pt.color||'#6c8fff')}"></span>
+              ${p.name}<span style="opacity:0.6;margin-left:3px;font-size:10px">${cl.name||''}</span>
+            </button>`;
+          }).join('');
+    } else {
+      projBar.innerHTML = '';
+    }
+  }
+
+  renderCalendar('calendar-body-global', globalCalFilter, globalCalProjFilter);
   renderGlobalList();
   renderProjLegend('proj-legend-global', globalCalFilter);
 }
 
-function setCalClientAll() {
-  globalCalFilter = null;
+function setCalClientAll() { globalCalFilter = null; globalCalProjFilter = null; renderGlobalCalendar(); }
+function setGlobalCalProjAll() { globalCalProjFilter = null; renderGlobalCalendar(); }
+function toggleGlobalCalProj(id) {
+  if (!globalCalProjFilter) { globalCalProjFilter = [id]; }
+  else if (globalCalProjFilter.includes(id)) {
+    globalCalProjFilter = globalCalProjFilter.filter(k => k !== id);
+    if (!globalCalProjFilter.length) globalCalProjFilter = null;
+  } else { globalCalProjFilter = [...globalCalProjFilter, id]; }
   renderGlobalCalendar();
 }
 
 function toggleCalClientFilter(key) {
-  if (!globalCalFilter) {
-    globalCalFilter = [key];
-  } else if (globalCalFilter.includes(key)) {
+  if (!globalCalFilter) { globalCalFilter = [key]; }
+  else if (globalCalFilter.includes(key)) {
     globalCalFilter = globalCalFilter.filter(k => k !== key);
     if (!globalCalFilter.length) globalCalFilter = null;
-  } else {
-    globalCalFilter = [...globalCalFilter, key];
-  }
+  } else { globalCalFilter = [...globalCalFilter, key]; }
+  globalCalProjFilter = null; // reset project filter when client changes
   renderGlobalCalendar();
 }
 
@@ -2818,7 +2855,7 @@ function saveEditProject() {
   saveData();
   closeAllModals();
   renderProjectsSection();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   showToast(`"${name}" updated ✓`);
 }
 
@@ -2831,7 +2868,7 @@ function deleteProject(projId) {
   saveData();
   closeAllModals();
   renderProjectsSection();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   showToast(`"${name}" deleted`);
 }
 
@@ -2917,8 +2954,41 @@ function renderClientDetail() {
   document.getElementById('cd-posts').textContent = `${cl.posts} posts/month`;
   document.getElementById('cd-proposal').href = cl.proposal;
   renderProjectsSection();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
+}
+
+function renderClientCalendar() {
+  if (!currentClient) return;
+  // Project filter bar for client detail
+  const bar = document.getElementById('cal-proj-filter-client');
+  if (bar) {
+    const clientProjs = projects.filter(p => p.clientId === currentClient);
+    if (clientProjs.length) {
+      const allActive = !clientCalProjFilter;
+      bar.innerHTML = `<button class="cal-client-pill all-pill${allActive ? ' active' : ''}" onclick="setClientCalProjAll()" style="font-size:11px">📂 All Projects</button>`
+        + clientProjs.map(p => {
+            const pt = projectTypes[p.type] || {};
+            const on = clientCalProjFilter && clientCalProjFilter.includes(p.id);
+            return `<button class="cal-client-pill${on ? ' active' : ''}" onclick="toggleClientCalProj('${p.id}')"
+              style="font-size:11px;${on ? `background:${pt.color||'#6c8fff'};border-color:transparent` : ''}">
+              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${on?'rgba(255,255,255,0.8)':(pt.color||'#6c8fff')}"></span>
+              ${pt.icon||''} ${p.name}
+            </button>`;
+          }).join('');
+    } else { bar.innerHTML = ''; }
+  }
+  renderCalendar('calendar-body', currentClient, clientCalProjFilter);
   renderProjLegend('proj-legend-client', currentClient);
+}
+
+function setClientCalProjAll() { clientCalProjFilter = null; renderClientCalendar(); }
+function toggleClientCalProj(id) {
+  if (!clientCalProjFilter) { clientCalProjFilter = [id]; }
+  else if (clientCalProjFilter.includes(id)) {
+    clientCalProjFilter = clientCalProjFilter.filter(k => k !== id);
+    if (!clientCalProjFilter.length) clientCalProjFilter = null;
+  } else { clientCalProjFilter = [...clientCalProjFilter, id]; }
+  renderClientCalendar();
 }
 
 function renderContentList(filter='all') {
@@ -3029,27 +3099,27 @@ function filterContents(filter, tabEl) {
 // ─── APPROVAL ACTIONS ─────────────────────────────────────────────────────────
 function approveDirection(id) {
   const c = contents.find(x=>x.id===id);
-  if (c) { c.directionApproved = true; c.status = 'pending-artwork'; saveData(); refreshAllProjectContent(); renderCalendar('calendar-body', currentClient); renderDashboard(); showToast('Direction approved! ✓'); }
+  if (c) { c.directionApproved = true; c.status = 'pending-artwork'; saveData(); refreshAllProjectContent(); renderClientCalendar(); renderDashboard(); showToast('Direction approved! ✓'); }
 }
 
 function approveArtwork(id) {
   const c = contents.find(x=>x.id===id);
-  if (c) { c.artworkApproved = true; c.status = 'approved'; saveData(); refreshAllProjectContent(); renderCalendar('calendar-body', currentClient); renderDashboard(); showToast('Artwork approved! Ready to schedule. ✓'); }
+  if (c) { c.artworkApproved = true; c.status = 'approved'; saveData(); refreshAllProjectContent(); renderClientCalendar(); renderDashboard(); showToast('Artwork approved! Ready to schedule. ✓'); }
 }
 
 function schedulePost(id) {
   const c = contents.find(x=>x.id===id);
-  if (c) { c.status = 'scheduled'; saveData(); refreshAllProjectContent(); renderCalendar('calendar-body', currentClient); renderDashboard(); showToast('Post scheduled! 📅'); }
+  if (c) { c.status = 'scheduled'; saveData(); refreshAllProjectContent(); renderClientCalendar(); renderDashboard(); showToast('Post scheduled! 📅'); }
 }
 
 function sendForApproval(id) {
   const c = contents.find(x=>x.id===id);
-  if (c) { c.status = 'pending-direction'; saveData(); refreshAllProjectContent(); renderCalendar('calendar-body', currentClient); renderDashboard(); showToast('Sent to client for direction approval! →'); }
+  if (c) { c.status = 'pending-direction'; saveData(); refreshAllProjectContent(); renderClientCalendar(); renderDashboard(); showToast('Sent to client for direction approval! →'); }
 }
 
 function markAsPosted(id) {
   const c = contents.find(x=>x.id===id);
-  if (c) { c.status = 'published'; saveData(); refreshAllProjectContent(); renderCalendar('calendar-body', currentClient); renderDashboard(); showToast('Post marked as published! ✓'); }
+  if (c) { c.status = 'published'; saveData(); refreshAllProjectContent(); renderClientCalendar(); renderDashboard(); showToast('Post marked as published! ✓'); }
 }
 
 function rejectArtwork(id) {
@@ -3550,7 +3620,7 @@ function addContent() {
     renderProjectContent(projId);
     refreshAllProjectContent();
   }
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   renderCalendar('calendar-body-global', null);
   renderDashboard();
   showToast('Content created! ✓');
@@ -3610,7 +3680,7 @@ function saveNewProject() {
   saveData();
   closeAllModals();
   renderProjectsSection();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   showToast(`Project "${name}" added! ✓`);
 }
 
@@ -3650,7 +3720,7 @@ function saveEditContent(id) {
   saveData();
   closeAllModals();
   refreshAllProjectContent();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   renderDashboard();
   showToast('Content updated! ✓');
 }
@@ -3660,7 +3730,7 @@ function deleteContent(id) {
   saveData();
   closeAllModals();
   refreshAllProjectContent();
-  renderCalendar('calendar-body', currentClient);
+  renderClientCalendar();
   renderDashboard();
   showToast('Content deleted.');
 }
