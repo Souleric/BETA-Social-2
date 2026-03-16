@@ -2214,14 +2214,14 @@ let projects = [
 
 let contents = [];
 
-const team = [
-  { name:'Admin User', email:'admin@betasocial.com', role:'master_admin', clients:['All'] },
-  { name:'Sarah Chen', email:'sarah@betasocial.com', role:'account_manager', clients:['Benzac','Zenith Fitness'] },
-  { name:'James Park', email:'james@betasocial.com', role:'account_manager', clients:['ACCA','Urban Roots'] },
-  { name:'Aisha Rahman', email:'aisha@betasocial.com', role:'account_manager', clients:['Ippudo'] },
-  { name:'Ryan Kim', email:'ryan@betasocial.com', role:'designer', clients:['All'] },
-  { name:'Benzac Client', email:'contact@benzac.com', role:'client', clients:['Benzac'] },
-  { name:'ACCA Client', email:'contact@acca.com', role:'client', clients:['ACCA'] },
+let team = [
+  { id:'u1', name:'Admin User',    email:'admin@betasocial.com',    password:'123', role:'master_admin',   clients:['All'] },
+  { id:'u2', name:'Sarah Chen',    email:'sarah@betasocial.com',    password:'123', role:'account_manager', clients:['Benzac','Zenith Fitness'] },
+  { id:'u3', name:'James Park',    email:'james@betasocial.com',    password:'123', role:'account_manager', clients:['ACCA','Urban Roots'] },
+  { id:'u4', name:'Aisha Rahman',  email:'aisha@betasocial.com',    password:'123', role:'account_manager', clients:['Ippudo'] },
+  { id:'u5', name:'Ryan Kim',      email:'ryan@betasocial.com',     password:'123', role:'designer',        clients:['All'] },
+  { id:'u6', name:'Benzac Client', email:'contact@benzac.com',      password:'123', role:'client',          clients:['Benzac'] },
+  { id:'u7', name:'ACCA Client',   email:'contact@acca.com',        password:'123', role:'client',          clients:['ACCA'] },
 ];
 
 // ─── PERSISTENCE ─────────────────────────────────────────────────────────────
@@ -2241,6 +2241,7 @@ function resetAllData() {
   localStorage.removeItem('betasocial_contents');
   localStorage.removeItem('betasocial_clients');
   localStorage.removeItem('betasocial_projects');
+  localStorage.removeItem('betasocial_team');
   location.reload();
 }
 
@@ -2248,6 +2249,7 @@ function saveData() {
   localStorage.setItem('betasocial_contents', JSON.stringify(contents));
   localStorage.setItem('betasocial_clients', JSON.stringify(clients));
   localStorage.setItem('betasocial_projects', JSON.stringify(projects));
+  localStorage.setItem('betasocial_team', JSON.stringify(team));
 }
 function loadData() {
   try {
@@ -2257,6 +2259,8 @@ function loadData() {
     if (c) contents = JSON.parse(c);
     if (cl) clients = JSON.parse(cl);
     if (pr) projects = JSON.parse(pr);
+          const tm = localStorage.getItem('betasocial_team');
+          if (tm) team = JSON.parse(tm);
   } catch(e) {}
 }
 loadData();
@@ -3096,21 +3100,103 @@ function downloadClientReport(name) { showToast(`Generating report for ${name}..
 // ─── TEAM ─────────────────────────────────────────────────────────────────────
 function renderTeamList() {
   const el = document.getElementById('team-list');
-  const roleColors = { master_admin:'badge-active', account_manager:'badge-review', client:'badge-draft', designer:'badge-scheduled' };
+  if (!el) return;
+  const roleColors = {
+    master_admin:'badge-active', admin:'badge-active',
+    account_manager:'badge-review', client:'badge-draft', designer:'badge-scheduled'
+  };
+  const canManage = currentRole === 'admin';
   el.innerHTML = team.map(t => `
     <div class="content-row-main" style="border-bottom:1px solid var(--border)">
       <div style="flex:1;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:10px">
-        <div class="user-avatar" style="width:28px;height:28px;font-size:10px">${t.name.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
+        <div class="user-avatar" style="width:28px;height:28px;font-size:10px">${t.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</div>
         ${t.name}
       </div>
       <div style="width:200px;font-size:12px;color:var(--text2);font-family:var(--font-mono)">${t.email}</div>
-      <div style="width:120px"><span class="status-badge ${roleColors[t.role]||'badge-draft'}">${t.role.replace('_',' ')}</span></div>
-      <div style="width:120px;font-size:12px;color:var(--text2)">${t.clients.join(', ')}</div>
-      <div style="width:100px;text-align:right;display:flex;gap:4px;justify-content:flex-end">
-        <button class="btn btn-ghost btn-sm">Edit</button>
-        ${t.role !== 'master_admin' ? `<button class="btn btn-ghost btn-sm" style="color:var(--accent5)">Remove</button>` : ''}
+      <div style="width:140px"><span class="status-badge ${roleColors[t.role]||'badge-draft'}">${t.role.replace(/_/g,' ')}</span></div>
+      <div style="width:140px;font-size:12px;color:var(--text2)">${(t.clients||[]).join(', ')}</div>
+      <div style="width:120px;text-align:right;display:flex;gap:4px;justify-content:flex-end">
+        ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="openEditMember('${t.id}')">Edit</button>` : ''}
+        ${canManage && t.role !== 'master_admin' ? `<button class="btn btn-ghost btn-sm" style="color:var(--accent5)" onclick="confirmRemoveMember('${t.id}')">Remove</button>` : ''}
       </div>
     </div>`).join('');
+}
+
+function openEditMember(id) {
+  const t = team.find(m => m.id === id);
+  if (!t) return;
+  const clientOptions = ['<option value="All"' + (['All'].includes('All') && (t.clients||[]).includes('All') ? ' selected' : '') + '>All Clients</option>',
+    ...Object.entries(clients).map(([k,v]) => `<option value="${v.name}"${(t.clients||[]).includes(v.name)?' selected':''}>${v.name}</option>`)
+  ].join('');
+  const roleOpts = [
+    { value:'master_admin',    label:'Master Admin' },
+    { value:'admin',           label:'Admin' },
+    { value:'account_manager', label:'Account Manager' },
+    { value:'designer',        label:'Designer' },
+    { value:'client',          label:'Client' },
+  ].map(r => `<option value="${r.value}"${t.role===r.value?' selected':''}>${r.label}</option>`).join('');
+  const isMaster = t.role === 'master_admin';
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header"><div class="modal-title">Edit Member</div><button class="modal-close" onclick="closeAllModals()">✕</button></div>
+    <input type="hidden" id="edit-member-id" value="${t.id}">
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input class="form-control" id="edit-member-name" value="${t.name}"${isMaster?' readonly style="opacity:0.6"':''}></div>
+      <div class="form-group"><label>Email</label><input class="form-control" id="edit-member-email" value="${t.email}"${isMaster?' readonly style="opacity:0.6"':''}></div>
+    </div>
+    <div class="form-group"><label>New Password <span style="color:var(--text3);font-weight:400">(leave blank to keep current)</span></label><input class="form-control" id="edit-member-password" type="password" placeholder="Enter new password..."></div>
+    ${isMaster ? '<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Master Admin name and email are locked. You may only change the password.</div>' : `
+    <div class="form-group"><label>Role</label><select class="form-control" id="edit-member-role">${roleOpts}</select></div>
+    <div class="form-group"><label>Assigned Clients</label><select class="form-control" id="edit-member-clients" multiple style="height:90px">${clientOptions}</select><div style="font-size:11px;color:var(--text3);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div>`}
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditMember()">Save Changes</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveEditMember() {
+  const id = document.getElementById('edit-member-id').value;
+  const t = team.find(m => m.id === id);
+  if (!t) return;
+  const newPw = document.getElementById('edit-member-password').value;
+  if (newPw) t.password = newPw;
+  if (t.role !== 'master_admin') {
+    t.name  = document.getElementById('edit-member-name').value.trim() || t.name;
+    t.email = document.getElementById('edit-member-email').value.trim() || t.email;
+    t.role  = document.getElementById('edit-member-role').value;
+    const sel = document.getElementById('edit-member-clients');
+    t.clients = Array.from(sel.selectedOptions).map(o => o.value);
+  }
+  saveData();
+  closeAllModals();
+  renderTeamList();
+  showToast('Member updated! ✓');
+}
+
+function confirmRemoveMember(id) {
+  const t = team.find(m => m.id === id);
+  if (!t) return;
+  if (t.role === 'master_admin') { showToast('Master Admin cannot be removed.'); return; }
+  if (!confirm(`Remove ${t.name} from the team? This cannot be undone.`)) return;
+  team = team.filter(m => m.id !== id);
+  saveData();
+  renderTeamList();
+  showToast(t.name + ' removed from team.');
+}
+
+function addMember() {
+  const name     = (document.getElementById('new-member-name').value || '').trim();
+  const email    = (document.getElementById('new-member-email').value || '').trim();
+  const password = (document.getElementById('new-member-password').value || '').trim() || 'betasocial';
+  const role     = document.getElementById('new-member-role').value;
+  const sel      = document.getElementById('new-member-clients');
+  const clientsList = Array.from(sel.selectedOptions).map(o => o.value);
+  if (!name || !email) { showToast('Name and email are required.'); return; }
+  team.push({ id: 'u' + Date.now(), name, email, password, role, clients: clientsList });
+  saveData();
+  closeAllModals();
+  renderTeamList();
+  showToast('Team member added! ✓');
 }
 
 // ─── MODALS ───────────────────────────────────────────────────────────────────
@@ -3182,15 +3268,26 @@ const modalTemplates = {
       <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
       <button class="btn btn-primary" onclick="saveNewProject()">Add Project</button>
     </div>`,
-  'new-user': () => `
+  'new-user': () => {
+    const clientOptions = ['<option value="All">All Clients</option>',
+      ...Object.entries(clients).map(([k,v]) => `<option value="${v.name}">${v.name}</option>`)
+    ].join('');
+    return `
     <div class="modal-header"><div class="modal-title">Add Team Member</div><button class="modal-close" onclick="closeAllModals()">✕</button></div>
     <div class="form-row">
-      <div class="form-group"><label>Full Name</label><input class="form-control" placeholder="Jane Smith"></div>
-      <div class="form-group"><label>Email</label><input class="form-control" placeholder="jane@studio.com"></div>
+      <div class="form-group"><label>Full Name</label><input class="form-control" id="new-member-name" placeholder="Jane Smith"></div>
+      <div class="form-group"><label>Email</label><input class="form-control" id="new-member-email" placeholder="jane@betasocial.com"></div>
     </div>
-    <div class="form-group"><label>Role</label><select class="form-control"><option value="account_manager">Account Manager</option><option value="client">Client</option><option value="master_admin">Master Admin</option></select></div>
-    <div class="form-group"><label>Assign Clients</label><select class="form-control" multiple style="height:100px"><option>Benzac</option><option>ACCA</option><option>Ippudo</option><option>Zenith Fitness</option><option>Urban Roots</option></select><div style="font-size:11px;color:var(--text3);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div>
-    <div class="modal-footer"><button class="btn btn-outline" onclick="closeAllModals()">Cancel</button><button class="btn btn-primary" onclick="closeAllModals();showToast('Team member added! ✓')">Add Member</button></div>`,
+    <div class="form-group"><label>Password</label><input class="form-control" id="new-member-password" type="password" placeholder="Set login password"></div>
+    <div class="form-group"><label>Role</label><select class="form-control" id="new-member-role">
+      <option value="account_manager">Account Manager</option>
+      <option value="admin">Admin</option>
+      <option value="designer">Designer</option>
+      <option value="client">Client</option>
+    </select></div>
+    <div class="form-group"><label>Assigned Clients</label><select class="form-control" id="new-member-clients" multiple style="height:90px">${clientOptions}</select><div style="font-size:11px;color:var(--text3);margin-top:4px">Hold Ctrl/Cmd to select multiple</div></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeAllModals()">Cancel</button><button class="btn btn-primary" onclick="addMember()">Add Member</button></div>`;
+  },
 };
 
 function openModal(type) {
@@ -3390,22 +3487,24 @@ const USERS = {
 };
 
 function doLogin() {
-  const username = document.getElementById('login-username').value.trim();
+  const input    = document.getElementById('login-username').value.trim();
   const password = document.getElementById('login-password').value;
   const errorEl  = document.getElementById('login-error');
-  const user = USERS[username];
-  if (!user || user.password !== password) {
-    errorEl.textContent = 'Invalid username or password.';
+  // Check team array by email or name
+  const member = team.find(m => m.email.toLowerCase() === input.toLowerCase() || m.name.toLowerCase() === input.toLowerCase());
+  if (member && member.password === password) {
+    errorEl.textContent = '';
+    const roleSwitchMap = { master_admin:'admin', admin:'admin', account_manager:'am', designer:'designer', client:'client' };
+    const switchTo = roleSwitchMap[member.role] || 'client';
+    const initials = member.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    switchRole(switchTo);
+    document.getElementById('user-avatar').textContent       = initials;
+    document.getElementById('user-name-display').textContent = member.name;
+    document.getElementById('user-role-display').textContent = member.role.replace(/_/g,' ');
+    document.getElementById('login-screen').classList.add('hidden');
     return;
   }
-  errorEl.textContent = '';
-  // Apply role
-  switchRole(user.role);
-  document.getElementById('user-avatar').textContent        = user.initials;
-  document.getElementById('user-name-display').textContent  = user.display;
-  document.getElementById('user-role-display').textContent  = user.label;
-  // Hide login screen
-  document.getElementById('login-screen').classList.add('hidden');
+  errorEl.textContent = 'Invalid email or password.';
 }
 
 function doLogout() {
