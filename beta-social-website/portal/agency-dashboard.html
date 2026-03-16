@@ -2004,61 +2004,24 @@
     <div class="view" id="view-reporting">
       <div class="section-header" style="margin-bottom:20px">
         <div class="section-title">Reporting</div>
-        <div style="display:flex;gap:8px">
-          <select class="form-control" style="width:160px;padding:6px 10px;font-size:12.5px">
-            <option>March 2026</option>
-            <option>February 2026</option>
-            <option>January 2026</option>
-          </select>
-          <button class="btn btn-primary btn-sm" onclick="downloadReport()">⬇ Download Report</button>
-        </div>
+        <button class="btn btn-primary btn-sm" onclick="downloadReport()">⬇ Download Report</button>
       </div>
-
-      <div class="report-grid">
-        <div class="report-card">
-          <div class="report-card-title">Overall Performance</div>
-          <div class="report-stat"><span class="report-stat-label">Total Posts Scheduled</span><span class="report-stat-val">42</span></div>
-          <div class="report-stat"><span class="report-stat-label">Posts Published</span><span class="report-stat-val">38</span></div>
-          <div class="report-stat"><span class="report-stat-label">Avg Approval Time</span><span class="report-stat-val">1.8 days</span></div>
-          <div class="report-stat"><span class="report-stat-label">Client Satisfaction</span><span class="report-stat-val">94%</span></div>
-        </div>
-        <div class="report-card">
-          <div class="report-card-title">Approval Status</div>
-          <div class="report-stat"><span class="report-stat-label">Direction Approved</span><span class="report-stat-val" style="color:var(--accent3)">5/6 clients</span></div>
-          <div class="report-stat"><span class="report-stat-label">Artwork Approved</span><span class="report-stat-val" style="color:var(--accent3)">36/42 posts</span></div>
-          <div class="report-stat"><span class="report-stat-label">Pending Direction</span><span class="report-stat-val" style="color:var(--accent4)">1 client</span></div>
-          <div class="report-stat"><span class="report-stat-label">Pending Artwork</span><span class="report-stat-val" style="color:var(--accent4)">6 posts</span></div>
-        </div>
-        <div class="report-card">
-          <div class="report-card-title">By Client — Benzac</div>
-          <div class="report-stat"><span class="report-stat-label">Posts Agreed</span><span class="report-stat-val">12</span></div>
-          <div class="report-stat"><span class="report-stat-label">Created</span><span class="report-stat-val">10</span></div>
-          <div class="report-stat"><span class="report-stat-label">Approved</span><span class="report-stat-val">8</span></div>
-          <div class="report-stat"><span class="report-stat-label">Published</span><span class="report-stat-val">7</span></div>
-        </div>
-        <div class="report-card">
-          <div class="report-card-title">By Client — ACCA</div>
-          <div class="report-stat"><span class="report-stat-label">Posts Agreed</span><span class="report-stat-val">10</span></div>
-          <div class="report-stat"><span class="report-stat-label">Created</span><span class="report-stat-val">8</span></div>
-          <div class="report-stat"><span class="report-stat-label">Approved</span><span class="report-stat-val">6</span></div>
-          <div class="report-stat"><span class="report-stat-label">Published</span><span class="report-stat-val">6</span></div>
-        </div>
-      </div>
-
-      <div class="section-header">
+      <div id="report-summary-grid" class="report-grid"></div>
+      <div class="section-header" style="margin-top:24px">
         <div class="section-title">Client Reports</div>
       </div>
       <div class="list-view-section">
         <div class="list-header">
           <div class="list-col col-title">Client</div>
-          <div class="list-col" style="width:120px">Account Manager</div>
-          <div class="list-col" style="width:100px">Posts</div>
-          <div class="list-col" style="width:100px">Status</div>
+          <div class="list-col" style="width:140px">Account Manager</div>
+          <div class="list-col" style="width:80px">Agreed</div>
+          <div class="list-col" style="width:80px">Created</div>
+          <div class="list-col" style="width:80px">Approved</div>
+          <div class="list-col" style="width:80px">Published</div>
+          <div class="list-col" style="width:80px">Pending</div>
           <div class="list-col col-actions">Report</div>
         </div>
-        <div id="report-client-list">
-          <!-- filled by JS -->
-        </div>
+        <div id="report-client-list"></div>
       </div>
     </div>
 
@@ -3122,21 +3085,63 @@ function clientCardHTML(key) {
 
 // ─── REPORTING ────────────────────────────────────────────────────────────────
 function renderReportList() {
-  const el = document.getElementById('report-client-list');
-  const data = [
-    { name:'Benzac', am:'Sarah Chen', agreed:12, published:7, status:'Active' },
-    { name:'ACCA', am:'James Park', agreed:10, published:6, status:'Active' },
-    { name:'Ippudo', am:'Aisha Rahman', agreed:15, published:3, status:'Needs Attention' },
-    { name:'Zenith Fitness', am:'Sarah Chen', agreed:20, published:10, status:'Active' },
-    { name:'Urban Roots', am:'James Park', agreed:8, published:7, status:'Active' },
-  ];
-  el.innerHTML = data.map(d => `
+  const listEl = document.getElementById('report-client-list');
+  const summaryEl = document.getElementById('report-summary-grid');
+  const visKeys = getVisibleClientKeys();
+
+  // Per-client stats
+  const rows = visKeys.map(k => {
+    const cl = clients[k];
+    if (!cl) return null;
+    const cc = contents.filter(c => c.client === k);
+    const agreed    = cl.posts || 0;
+    const created   = cc.length;
+    const approved  = cc.filter(c => ['approved','scheduled','published'].includes(c.status)).length;
+    const published = cc.filter(c => c.status === 'published').length;
+    const pending   = cc.filter(c => ['pending-direction','pending-artwork'].includes(c.status)).length;
+    const hasPending = pending > 0;
+    return { k, cl, agreed, created, approved, published, pending, hasPending };
+  }).filter(Boolean);
+
+  // Summary cards — totals across visible clients
+  const totalAgreed    = rows.reduce((s, r) => s + r.agreed, 0);
+  const totalCreated   = rows.reduce((s, r) => s + r.created, 0);
+  const totalApproved  = rows.reduce((s, r) => s + r.approved, 0);
+  const totalPublished = rows.reduce((s, r) => s + r.published, 0);
+  const totalPending   = rows.reduce((s, r) => s + r.pending, 0);
+  const approvedPct    = totalCreated ? Math.round(totalApproved / totalCreated * 100) : 0;
+
+  if (summaryEl) summaryEl.innerHTML = `
+    <div class="report-card">
+      <div class="report-card-title">Overall Performance</div>
+      <div class="report-stat"><span class="report-stat-label">Clients</span><span class="report-stat-val">${rows.length}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Posts Created</span><span class="report-stat-val">${totalCreated}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Posts Published</span><span class="report-stat-val">${totalPublished}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Approval Rate</span><span class="report-stat-val">${approvedPct}%</span></div>
+    </div>
+    <div class="report-card">
+      <div class="report-card-title">Content Pipeline</div>
+      <div class="report-stat"><span class="report-stat-label">Total Agreed Posts</span><span class="report-stat-val">${totalAgreed}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Approved / Scheduled</span><span class="report-stat-val" style="color:var(--accent3)">${totalApproved}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Pending Approval</span><span class="report-stat-val" style="color:var(--accent4)">${totalPending}</span></div>
+      <div class="report-stat"><span class="report-stat-label">Published</span><span class="report-stat-val" style="color:var(--accent3)">${totalPublished}</span></div>
+    </div>`;
+
+  if (!rows.length) {
+    listEl.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">No clients assigned.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = rows.map(r => `
     <div class="content-row-main" style="border-bottom:1px solid var(--border)">
-      <div class="col-title" style="flex:1;font-size:13.5px;font-weight:500">${d.name}</div>
-      <div style="width:120px;font-size:12.5px;color:var(--text2)">${d.am}</div>
-      <div style="width:100px;font-size:12.5px;font-family:var(--font-mono)">${d.published}/${d.agreed}</div>
-      <div style="width:100px"><span class="status-badge ${d.status==='Active'?'badge-active':'badge-pending'}">${d.status}</span></div>
-      <div style="width:100px;text-align:right"><button class="btn btn-outline btn-sm" onclick="downloadClientReport('${d.name}')">⬇ PDF</button></div>
+      <div style="flex:1;font-size:13.5px;font-weight:500">${r.cl.name}</div>
+      <div style="width:140px;font-size:12.5px;color:var(--text2)">${r.cl.am}</div>
+      <div style="width:80px;font-size:12.5px;font-family:var(--font-mono);color:var(--text2)">${r.agreed}</div>
+      <div style="width:80px;font-size:12.5px;font-family:var(--font-mono)">${r.created}</div>
+      <div style="width:80px;font-size:12.5px;font-family:var(--font-mono);color:var(--accent3)">${r.approved}</div>
+      <div style="width:80px;font-size:12.5px;font-family:var(--font-mono);color:var(--accent3)">${r.published}</div>
+      <div style="width:80px"><span class="status-badge ${r.hasPending?'badge-pending':'badge-active'}">${r.pending > 0 ? r.pending+' pending' : 'On track'}</span></div>
+      <div style="width:80px;text-align:right"><button class="btn btn-outline btn-sm" onclick="downloadClientReport('${r.cl.name}')">⬇ PDF</button></div>
     </div>`).join('');
 }
 
