@@ -341,3 +341,22 @@ gsap.utils.toArray('.section-header').forEach((header) => {
     ease: "power2.out"
   });
 });
+
+// Mobile Menu Toggle
+const hamburger = document.getElementById('hamburger-menu');
+const navMenu = document.getElementById('nav-menu');
+const navLinks = document.querySelectorAll('.nav-links a, #nav-cta');
+
+if (hamburger && navMenu) {
+  hamburger.addEventListener('click', () => {
+    hamburger.classList.toggle('active');
+    navMenu.classList.toggle('active');
+  });
+
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      hamburger.classList.remove('active');
+      navMenu.classList.remove('active');
+    });
+  });
+}
