@@ -3749,7 +3749,8 @@ function doLogin() {
   const password = document.getElementById('login-password').value.trim();
   const errorEl  = document.getElementById('login-error');
   // Check team array by email or name
-  const member = team.find(m => m.email.toLowerCase() === input.toLowerCase() || m.name.toLowerCase() === input.toLowerCase());
+  const inp = input.toLowerCase();
+  const member = team.find(m => m.email.toLowerCase() === inp || m.name.toLowerCase() === inp || m.name.split(' ')[0].toLowerCase() === inp);
   if (member && member.password === password) {
     errorEl.textContent = '';
     currentMember = member;
