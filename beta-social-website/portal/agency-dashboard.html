@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=393, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -90,11 +90,9 @@
   }
 
   .nav-section-label {
-    font-size: 11px;
-    letter-spacing: -0.1px;
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 9.5px;
+    font-size: 10px;
     letter-spacing: 1.5px;
     color: var(--text3);
     padding: 0 12px;
@@ -105,7 +103,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 12px;
+    padding: 11px 12px;
     border-radius: var(--radius2);
     cursor: pointer;
     font-size: 13.5px;
@@ -114,6 +112,7 @@
     transition: all 0.15s;
     border: 1px solid transparent;
     margin-bottom: 2px;
+    min-height: 44px;
   }
 
   .nav-item:hover {
@@ -1359,13 +1358,13 @@
     flex-direction: column;
     justify-content: center;
     gap: 5px;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     flex-shrink: 0;
     background: none;
     border: none;
-    padding: 4px;
+    padding: 8px;
   }
   .hamburger span {
     display: block;
@@ -1501,6 +1500,46 @@
     .stat-value { font-size: 22px; }
     .topbar-title { font-size: 14px; }
     .content { padding: 12px; }
+    .topbar { padding: 0 12px; gap: 6px; }
+
+    /* Bigger touch targets for buttons */
+    .btn { padding: 10px 14px; min-height: 44px; }
+    .btn-sm { padding: 9px 12px; min-height: 40px; }
+
+    /* Logout button */
+    .logout-btn { min-height: 44px; padding: 10px; }
+
+    /* Status badges slightly larger */
+    .status-badge { font-size: 11px; padding: 4px 9px; }
+
+    /* Nav section label */
+    .nav-section-label { font-size: 10px; }
+
+    /* Notif badge */
+    .notif-badge { font-size: 11px; padding: 2px 7px; }
+
+    /* Modal full-screen bottom sheet */
+    .modal { border-radius: 24px 24px 0 0; }
+    .modal-header { padding-bottom: 16px; }
+
+    /* Calendar cells tighter */
+    .cal-day { min-height: 46px; }
+    .cal-event { font-size: 8px; }
+
+    /* Pipeline badges compact */
+    .status-badge.pipeline { font-size: 10px; padding: 3px 7px; }
+
+    /* Section titles */
+    .section-title { font-size: 16px; }
+
+    /* Project card */
+    .project-card { padding: 12px; }
+    .project-name { font-size: 13px; }
+    .project-dates { font-size: 11px; }
+
+    /* Content row adjustments */
+    .row-title { font-size: 13px; }
+    .content-row-detail { padding: 0 12px 12px; }
   }
 
   /* ─── LOGIN SCREEN ─────────────────────────────────── */
@@ -1595,7 +1634,7 @@
 
   .login-btn {
     width: 100%;
-    padding: 13px;
+    padding: 14px;
     background: var(--accent);
     color: white;
     border: none;
@@ -1605,6 +1644,7 @@
     font-weight: 500;
     cursor: pointer;
     margin-top: 4px;
+    min-height: 50px;
     transition: opacity 0.2s, background 0.2s;
     letter-spacing: -0.1px;
   }
