@@ -14,7 +14,7 @@
 <meta http-equiv="Expires" content="0">
 <script>
   // Force reload if a newer version has been deployed
-  const DASH_VERSION = '20260316-2';
+  const DASH_VERSION = '20260316-3';
   if (localStorage.getItem('dash_version') !== DASH_VERSION) {
     localStorage.setItem('dash_version', DASH_VERSION);
     if (!sessionStorage.getItem('reloaded')) {
@@ -56,6 +56,7 @@
   html {
     -webkit-text-size-adjust: 100%;
     height: -webkit-fill-available;
+    overflow-x: hidden;
   }
 
   body {
@@ -237,6 +238,8 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
+    max-width: calc(100vw - 240px);
   }
 
   /* TOPBAR */
@@ -1425,7 +1428,7 @@
     }
     .sidebar.open { transform: translateX(0); }
 
-    .main { margin-left: 0; }
+    .main { margin-left: 0; max-width: 100vw; }
 
     .topbar { padding: 0 14px; gap: 8px; }
     .topbar-title { font-size: 15px; }
@@ -3234,7 +3237,7 @@ function getApprovalBtns(c) {
   }
   if (currentRole === 'designer') {
     if (c.status === 'pending-artwork') {
-      if (!c.artwork) return `<input class="form-control" style="width:240px;display:inline-block;margin-right:6px" placeholder="Paste Google Drive link..." id="artwork-input-${c.id}"><button class="btn btn-primary btn-sm" onclick="submitArtwork(${c.id})">Submit Artwork</button>`;
+      if (!c.artwork) return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"><input class="form-control" style="flex:1;min-width:0" placeholder="Paste Google Drive link..." id="artwork-input-${c.id}"><button class="btn btn-primary btn-sm" onclick="submitArtwork(${c.id})">Submit Artwork</button></div>`;
       return `<a href="${c.artwork}" class="btn btn-outline btn-sm" target="_blank">View Artwork</a><button class="btn btn-outline btn-sm" onclick="updateArtwork(${c.id})">Update Link</button>`;
     }
     return `<span style="color:var(--text3);font-size:12px">No action needed</span>`;
