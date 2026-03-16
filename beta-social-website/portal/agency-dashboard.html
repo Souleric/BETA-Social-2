@@ -1520,6 +1520,74 @@
 
     /* Notifications */
     .notif-card { padding: 14px; }
+
+    /* ── Project card: stack on mobile ── */
+    .proj-info-row { flex-direction: column; gap: 10px; }
+    .proj-info-right { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; }
+    .proj-action-btns { display: flex; gap: 6px; }
+
+    /* ── Content rows as mobile cards ── */
+    .content-row { border-bottom: 1px solid var(--border); }
+    .content-row-main {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      padding: 14px;
+      gap: 4px 8px;
+      cursor: pointer;
+      position: relative;
+    }
+    .content-row-main::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      font-size: 11px;
+      color: var(--text3);
+      transition: transform 0.2s;
+    }
+    .content-row.expanded .content-row-main::after { transform: rotate(180deg); }
+    .row-title { grid-column: 1; grid-row: 1; font-size: 14px; font-weight: 600; width: auto; flex: unset; padding-right: 0; }
+    .row-status { grid-column: 2; grid-row: 1; width: auto; display: flex; align-items: flex-start; }
+    .row-date { grid-column: 1; grid-row: 2; width: auto; font-size: 11px; color: var(--text3); order: unset; }
+    .row-type { grid-column: 2; grid-row: 2; width: auto; font-size: 11px; display: flex; align-items: center; justify-content: flex-end; }
+    .row-actions { display: none; }
+    .expand-icon { position: static; display: none; }
+
+    /* ── Expand detail: client-friendly layout ── */
+    .content-row-detail { padding: 0 14px 16px; }
+    .detail-grid { grid-template-columns: 1fr; gap: 14px; padding-top: 12px; }
+    .detail-field label { font-size: 10px; margin-bottom: 5px; }
+    .detail-field .detail-val { font-size: 14px; line-height: 1.6; }
+
+    /* Artwork button — prominent CTA */
+    .detail-link {
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent) !important;
+      text-decoration: none;
+    }
+
+    /* Approval buttons — full width, easy to tap */
+    .detail-actions {
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 14px;
+    }
+    .detail-actions .btn {
+      width: 100%;
+      justify-content: center;
+      min-height: 48px;
+      font-size: 14px;
+    }
   }
 
   /* ─── SAFE AREA (Dynamic Island + Home Indicator) ── */
@@ -1740,6 +1808,10 @@
   }
 
   .project-info { flex: 1; min-width: 0; }
+  .proj-info-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .proj-info-left { flex: 1; min-width: 0; }
+  .proj-info-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .proj-action-btns { display: flex; gap: 6px; margin-top: 2px; }
 
   .project-content-section {
     border-top: 1px solid var(--border);
@@ -2847,8 +2919,8 @@ function renderProjectsSection() {
       <div class="project-header-row">
         <div class="project-color-stripe" style="background:${pt.color}"></div>
         <div class="project-info" style="flex:1">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-            <div>
+          <div class="proj-info-row">
+            <div class="proj-info-left">
               <div class="project-name">${pt.icon} ${p.name}</div>
               <div class="project-dates">${startFmt} → ${endFmt}</div>
               <div class="project-timeline-wrap">
@@ -2858,10 +2930,10 @@ function renderProjectsSection() {
                 <span class="project-pct">${pct}%</span>
               </div>
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+            <div class="proj-info-right">
               <span class="proj-type-badge" style="background:${pt.bg};color:${pt.color}">${pt.label}</span>
               <span style="font-size:11px;color:${statusColor};font-family:var(--font-mono);font-weight:600">● ${statusLabel}</span>
-              <div style="display:flex;gap:6px;margin-top:2px">${addContentBtn}${editBtn}</div>
+              <div class="proj-action-btns">${addContentBtn}${editBtn}</div>
             </div>
           </div>
           <div class="pipeline-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border1)">${pipelineHtml}</div>
