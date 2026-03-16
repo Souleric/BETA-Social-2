@@ -1948,7 +1948,7 @@
           </div>
           <div class="cdc-actions">
             <button class="btn btn-outline btn-sm" onclick="openModal('new-content')">＋ Add Content</button>
-            <button class="btn btn-outline btn-sm" onclick="openModal('edit-client')">Edit</button>
+            <button class="btn btn-outline btn-sm" onclick="openEditClient()">Edit</button>
           </div>
         </div>
       </div>
@@ -2731,6 +2731,64 @@ function renderGlobalList() {
 }
 
 // ─── CLIENT DETAIL ────────────────────────────────────────────────────────────
+function openEditClient() {
+  const cl = clients[currentClient];
+  if (!cl) return;
+  const amOptions = [...new Set(team.filter(t => t.role === 'account_manager').map(t => t.name))]
+    .map(n => `<option${n === cl.am ? ' selected' : ''}>${n}</option>`).join('');
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header"><div class="modal-title">Edit Client — ${cl.name}</div><button class="modal-close" onclick="closeAllModals()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>Client Name</label><input class="form-control" id="ec-name" value="${cl.name}"></div>
+      <div class="form-group"><label>Monthly Posts</label><input class="form-control" type="number" id="ec-posts" value="${cl.posts}" min="1"></div>
+    </div>
+    <div class="form-group"><label>Account Manager</label><select class="form-control" id="ec-am">${amOptions}</select></div>
+    <div class="form-group"><label>Proposal (Google Drive Link)</label><input class="form-control" id="ec-proposal" value="${cl.proposal || ''}" placeholder="https://drive.google.com/file/..."></div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;font-size:13px;font-weight:500;letter-spacing:0">
+        <input type="checkbox" id="ec-no-contract" onchange="document.getElementById('ec-contract-fields').style.display=this.checked?'none':''" style="width:16px;height:16px;cursor:pointer;accent-color:var(--accent)" ${!cl.contractStart ? 'checked' : ''}>
+        No contract period
+      </label>
+    </div>
+    <div id="ec-contract-fields" style="${!cl.contractStart ? 'display:none' : ''}">
+      <div style="font-size:11px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">Engagement Period</div>
+      <div class="form-row">
+        <div class="form-group"><label>Start Date</label><input class="form-control" type="date" id="ec-start" value="${cl.contractStart || ''}"></div>
+        <div class="form-group"><label>End Date</label><input class="form-control" type="date" id="ec-end" value="${cl.contractEnd || ''}"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeAllModals()">Cancel</button><button class="btn btn-primary" onclick="saveEditClient()">Save Changes</button></div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function saveEditClient() {
+  const cl = clients[currentClient];
+  if (!cl) return;
+  const name = document.getElementById('ec-name')?.value.trim();
+  if (!name) { showToast('Client name is required'); return; }
+  const posts = parseInt(document.getElementById('ec-posts')?.value) || cl.posts;
+  const am = document.getElementById('ec-am')?.value || cl.am;
+  const proposal = document.getElementById('ec-proposal')?.value.trim() || '';
+  const noContract = document.getElementById('ec-no-contract')?.checked;
+  const contractStart = noContract ? null : (document.getElementById('ec-start')?.value || null);
+  const contractEnd   = noContract ? null : (document.getElementById('ec-end')?.value   || null);
+  // Update initials if name changed
+  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  cl.name = name;
+  cl.initials = initials;
+  cl.posts = posts;
+  cl.am = am;
+  cl.proposal = proposal;
+  cl.contractStart = contractStart;
+  cl.contractEnd = contractEnd;
+  saveData();
+  closeAllModals();
+  renderClientDetail();
+  renderClientsView();
+  renderDashboard();
+  showToast('Client updated! ✓');
+}
+
 function renderClientDetail() {
   if (!currentClient || !clients[currentClient]) return;
   const cl = clients[currentClient];
