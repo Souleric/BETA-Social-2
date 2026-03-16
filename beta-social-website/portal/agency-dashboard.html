@@ -1996,52 +1996,8 @@
     <div class="view" id="view-notifications">
       <div class="section-header" style="margin-bottom:20px">
         <div class="section-title">Notifications & Reminders</div>
-        <button class="btn btn-outline btn-sm">Mark all read</button>
       </div>
-      <div class="notifications-list">
-        <div class="notif-card unread">
-          <div class="notif-dot dot-gold"></div>
-          <div class="notif-body">
-            <div class="notif-card-title">🗓️ Content Planning Reminder</div>
-            <div class="notif-card-text">It's the 5th — time to plan next month's content for all active clients. Coordinate with account managers to draft content calendars for April 2026.</div>
-            <div class="notif-card-meta">📌 Scheduled · March 5, 2026 · For: All Account Managers</div>
-          </div>
-          <button class="btn btn-outline btn-sm" style="flex-shrink:0">Done</button>
-        </div>
-        <div class="notif-card reminder">
-          <div class="notif-dot dot-red"></div>
-          <div class="notif-body">
-            <div class="notif-card-title">⏰ Ippudo — Artwork Approval Overdue</div>
-            <div class="notif-card-text">3 content pieces for Ippudo are awaiting client artwork approval for over 48 hours. Follow up with the client to avoid posting delays.</div>
-            <div class="notif-card-meta">⚡ Urgent · March 8, 2026 · AM: Aisha Rahman</div>
-          </div>
-          <button class="btn btn-danger btn-sm" style="flex-shrink:0">View</button>
-        </div>
-        <div class="notif-card">
-          <div class="notif-dot" style="background:var(--accent3)"></div>
-          <div class="notif-body">
-            <div class="notif-card-title">✅ Benzac — Direction Approved</div>
-            <div class="notif-card-text">Client has approved the content direction for March. Proceed with artwork creation. 12 posts confirmed.</div>
-            <div class="notif-card-meta">✓ Read · March 7, 2026 · AM: Sarah Chen</div>
-          </div>
-        </div>
-        <div class="notif-card" style="opacity:0.6">
-          <div class="notif-dot" style="background:var(--text3)"></div>
-          <div class="notif-body">
-            <div class="notif-card-title">📊 Reporting Reminder</div>
-            <div class="notif-card-text">Upcoming on the 25th: Prepare monthly performance reports for all clients. Pull analytics data and compile summaries.</div>
-            <div class="notif-card-meta">📌 Scheduled · March 25, 2026 · For: All Account Managers</div>
-          </div>
-        </div>
-        <div class="notif-card" style="opacity:0.6">
-          <div class="notif-dot" style="background:var(--text3)"></div>
-          <div class="notif-body">
-            <div class="notif-card-title">📅 Scheduling Reminder (Upcoming)</div>
-            <div class="notif-card-text">On the 20th: Schedule all approved posts for next month across all client accounts. Ensure artwork is finalized before scheduling.</div>
-            <div class="notif-card-meta">📌 Scheduled · March 20, 2026 · For: All Account Managers</div>
-          </div>
-        </div>
-      </div>
+      <div class="notifications-list" id="notifications-list"></div>
     </div>
 
     <!-- REPORTING VIEW -->
@@ -2283,6 +2239,7 @@ function showView(view) {
   if (view === 'reporting') renderReportList();
   if (view === 'users') renderTeamList();
   if (view === 'designer-tasks') renderDesignerTasks();
+  if (view === 'notifications') renderNotifications();
   checkMonthlyReminder();
 }
 
@@ -2333,45 +2290,124 @@ function toggleContractFields(checkbox) {
   document.getElementById('contract-fields').style.display = checkbox.checked ? 'none' : 'block';
 }
 
-function checkContractExpiry() {
-  const today = new Date('2026-03-10'); // using project current date
-  const warningMs = 30 * 24 * 60 * 60 * 1000;
-  const list = document.querySelector('#view-notifications .notifications-list');
+function renderNotifications() {
+  const list = document.getElementById('notifications-list');
   if (!list) return;
+  const today = new Date();
+  const day = today.getDate();
+  const visKeys = getVisibleClientKeys();
+  const isAdminOrAM = ['admin', 'am'].includes(currentRole);
+  const cards = [];
 
-  // Remove any previously injected contract warnings
-  list.querySelectorAll('.contract-expiry-notif').forEach(el => el.remove());
-
-  let expiringCount = 0;
-  Object.values(clients).forEach(cl => {
-    if (!cl.contractEnd) return;
+  // 1. Contract expiry — visible clients only
+  const warningMs = 30 * 24 * 60 * 60 * 1000;
+  visKeys.forEach(k => {
+    const cl = clients[k];
+    if (!cl || !cl.contractEnd) return;
     const end = new Date(cl.contractEnd);
     const diff = end - today;
-    if (diff < 0 || diff > warningMs) return; // already expired or >30 days away
-
-    expiringCount++;
+    if (diff < 0 || diff > warningMs) return;
     const daysLeft = Math.ceil(diff / (24 * 60 * 60 * 1000));
     const isUrgent = daysLeft <= 7;
-    const endFormatted = end.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-
-    const card = document.createElement('div');
-    card.className = `notif-card unread contract-expiry-notif${isUrgent ? ' urgent' : ''}`;
-    card.innerHTML = `
-      <div class="notif-dot" style="background:${isUrgent ? 'var(--accent5)' : 'var(--accent4)'}"></div>
-      <div class="notif-body">
-        <div class="notif-card-title">${isUrgent ? '🚨' : '⚠️'} ${cl.name} — Contract Expiring in ${daysLeft} Day${daysLeft === 1 ? '' : 's'}</div>
-        <div class="notif-card-text">The contract for ${cl.name} ends on ${endFormatted}. Please discuss renewal with the client and account manager before it lapses.</div>
-        <div class="notif-card-meta">📋 Contract · AM: ${cl.am}</div>
-      </div>`;
-    list.prepend(card);
+    const endFmt = end.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+    cards.push({ priority: isUrgent ? 0 : 1, html: `
+      <div class="notif-card unread${isUrgent ? ' urgent' : ''}">
+        <div class="notif-dot" style="background:${isUrgent ? 'var(--accent5)' : 'var(--accent4)'}"></div>
+        <div class="notif-body">
+          <div class="notif-card-title">${isUrgent ? '🚨' : '⚠️'} ${cl.name} — Contract Expiring in ${daysLeft} Day${daysLeft===1?'':'s'}</div>
+          <div class="notif-card-text">The contract for ${cl.name} ends on ${endFmt}. Discuss renewal before it lapses.</div>
+          <div class="notif-card-meta">📋 Contract · AM: ${cl.am}</div>
+        </div>
+      </div>` });
   });
 
-  // Update badge count
-  if (expiringCount > 0) {
-    const badge = document.querySelector('.notif-badge');
-    if (badge) badge.textContent = parseInt(badge.textContent || 0) + expiringCount;
+  // 2. Workflow notifications — pending items per visible client
+  visKeys.forEach(k => {
+    const cl = clients[k];
+    if (!cl) return;
+    const pending = contents.filter(c => c.client === k && ['pending-direction','pending-artwork'].includes(c.status));
+    const pendingDir = pending.filter(c => c.status === 'pending-direction');
+    const pendingArt = pending.filter(c => c.status === 'pending-artwork');
+    if (pendingDir.length) {
+      cards.push({ priority: 2, html: `
+        <div class="notif-card unread reminder">
+          <div class="notif-dot dot-red"></div>
+          <div class="notif-body">
+            <div class="notif-card-title">⏰ ${cl.name} — Direction Approval Needed</div>
+            <div class="notif-card-text">${pendingDir.length} content item${pendingDir.length>1?'s are':' is'} awaiting client direction approval.</div>
+            <div class="notif-card-meta">⚡ Action Required · AM: ${cl.am}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="openClientView('${k}');closeAllModals()">View</button>
+        </div>` });
+    }
+    if (pendingArt.length) {
+      cards.push({ priority: 2, html: `
+        <div class="notif-card unread reminder">
+          <div class="notif-dot dot-red"></div>
+          <div class="notif-body">
+            <div class="notif-card-title">🎨 ${cl.name} — Artwork Approval Needed</div>
+            <div class="notif-card-text">${pendingArt.length} content item${pendingArt.length>1?'s are':' is'} awaiting artwork approval.</div>
+            <div class="notif-card-meta">⚡ Action Required · AM: ${cl.am}</div>
+          </div>
+          <button class="btn btn-danger btn-sm" style="flex-shrink:0" onclick="openClientView('${k}');closeAllModals()">View</button>
+        </div>` });
+    }
+  });
+
+  // 3. Monthly reminders — admin/AM only
+  if (isAdminOrAM) {
+    const now = today;
+    const monthName = now.toLocaleString('en-US',{month:'long'});
+    const year = now.getFullYear();
+    if (day <= 7) {
+      cards.push({ priority: 3, html: `
+        <div class="notif-card unread">
+          <div class="notif-dot dot-gold"></div>
+          <div class="notif-body">
+            <div class="notif-card-title">🗓️ Content Planning Reminder</div>
+            <div class="notif-card-text">It's the start of the month — time to plan content for all active clients and draft calendars for ${monthName} ${year}.</div>
+            <div class="notif-card-meta">📌 Monthly · For: All Account Managers</div>
+          </div>
+        </div>` });
+    }
+    if (day >= 18 && day <= 22) {
+      cards.push({ priority: 3, html: `
+        <div class="notif-card unread">
+          <div class="notif-dot dot-gold"></div>
+          <div class="notif-body">
+            <div class="notif-card-title">📅 Scheduling Reminder</div>
+            <div class="notif-card-text">Schedule all approved posts for next month before the 20th. Ensure artwork is finalised.</div>
+            <div class="notif-card-meta">📌 Monthly · For: All Account Managers</div>
+          </div>
+        </div>` });
+    }
+    if (day >= 23 && day <= 27) {
+      cards.push({ priority: 3, html: `
+        <div class="notif-card unread">
+          <div class="notif-dot dot-gold"></div>
+          <div class="notif-body">
+            <div class="notif-card-title">📊 Reporting Reminder</div>
+            <div class="notif-card-text">Prepare monthly performance reports for all clients. Pull analytics and compile summaries.</div>
+            <div class="notif-card-meta">📌 Monthly · For: All Account Managers</div>
+          </div>
+        </div>` });
+    }
   }
+
+  cards.sort((a, b) => a.priority - b.priority);
+  if (!cards.length) {
+    list.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">No notifications — you're all caught up! ✓</div>`;
+  } else {
+    list.innerHTML = cards.map(c => c.html).join('');
+  }
+
+  // Update sidebar badge
+  const badge = document.querySelector('.notif-badge');
+  const urgent = cards.filter(c => c.priority <= 2).length;
+  if (badge) { badge.textContent = urgent || ''; badge.style.display = urgent ? '' : 'none'; }
 }
+
+function checkContractExpiry() { renderNotifications(); }
 
 // ─── CALENDAR ─────────────────────────────────────────────────────────────────
 function changeMonth(dir) {
