@@ -1814,7 +1814,7 @@
       <div class="nav-item" onclick="showView('clients')">
         <span class="nav-icon">◈</span> Clients
       </div>
-      <div class="nav-item" onclick="showView('calendar')">
+      <div class="nav-item" id="nav-calendar" onclick="showView('calendar')">
         <span class="nav-icon">◷</span> Content Calendar
       </div>
       <div class="nav-item" onclick="showView('reporting')">
@@ -2267,6 +2267,7 @@ function switchRole(role) {
   document.getElementById('user-role-display').textContent = r.role;
   document.getElementById('admin-only').style.display = (role === 'admin') ? '' : 'none';
   document.getElementById('designer-only').style.display = (role === 'designer') ? '' : 'none';
+  document.getElementById('nav-calendar').style.display = (role === 'client') ? 'none' : '';
   const newContentBtn = document.querySelector('[onclick="openModal(\'new-content\')"]');
   if (newContentBtn) newContentBtn.style.display = (role === 'client' || role === 'designer') ? 'none' : '';
   // Redirect designer to My Tasks on login
