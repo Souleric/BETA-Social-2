@@ -334,6 +334,37 @@
   .view.active { display: block; }
 
   /* NOTIFICATIONS BANNER */
+  /* AD TICKER */
+  .ad-ticker-wrap {
+    display: none;
+    overflow: hidden;
+    background: linear-gradient(90deg, #6c8fff, #a78bfa);
+    height: 36px;
+    align-items: center;
+    position: sticky;
+    top: 52px;
+    z-index: 49;
+    box-shadow: 0 1px 6px rgba(108,143,255,0.18);
+  }
+  .ad-ticker-wrap.visible { display: flex; }
+  .ad-ticker-track {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker-slide 28s linear infinite;
+  }
+  .ad-ticker-track:hover { animation-play-state: paused; }
+  .ad-ticker-text {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #fff;
+    letter-spacing: 0.2px;
+    padding: 0 60px;
+  }
+  @keyframes ticker-slide {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
   .notification-banner {
     background: rgba(0, 113, 227, 0.06);
     border: 1px solid rgba(0, 113, 227, 0.15);
@@ -1866,6 +1897,14 @@
     <div class="topbar-actions"></div>
   </div>
 
+  <!-- AD TICKER (client role only) -->
+  <div class="ad-ticker-wrap" id="ad-ticker">
+    <div class="ad-ticker-track" id="ad-ticker-track">
+      <span class="ad-ticker-text" id="ad-ticker-text"></span>
+      <span class="ad-ticker-text" id="ad-ticker-text2"></span>
+    </div>
+  </div>
+
   <!-- CONTENT -->
   <div class="content">
 
@@ -2042,8 +2081,22 @@
         <div id="team-list"></div>
       </div>
 
+      <!-- Client Ad Banner -->
+      <div style="margin-top:32px;padding:20px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">📢 Client Portal Ad Banner</div>
+            <div style="font-size:12px;color:var(--text3)">Sliding text shown to all client users at the top of their dashboard.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openEditAdBanner()">Edit Banner</button>
+        </div>
+        <div style="padding:10px 16px;background:linear-gradient(90deg,#6c8fff,#a78bfa);border-radius:8px;overflow:hidden">
+          <div id="ad-preview-admin" style="color:#fff;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+        </div>
+      </div>
+
       <!-- Danger Zone -->
-      <div style="margin-top:40px;padding:20px;border:1px solid rgba(255,59,48,0.3);border-radius:12px;background:rgba(255,59,48,0.04)">
+      <div style="margin-top:24px;padding:20px;border:1px solid rgba(255,59,48,0.3);border-radius:12px;background:rgba(255,59,48,0.04)">
         <div style="font-size:13px;font-weight:600;color:var(--accent5);margin-bottom:4px">Danger Zone</div>
         <div style="font-size:12px;color:var(--text3);margin-bottom:16px">These actions are permanent and cannot be undone.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2131,6 +2184,7 @@ let projects = [
 
 let contents = [];
 let currentMember = null;
+let adText = 'You can have a dashboard like this customised for your business too. Contact us!';
 
 let team = [
   { id:'u1', name:'Admin User',    email:'admin@betasocial.com',    password:'123', role:'master_admin',   clients:['All'] },
@@ -2168,17 +2222,20 @@ function saveData() {
   localStorage.setItem('betasocial_clients', JSON.stringify(clients));
   localStorage.setItem('betasocial_projects', JSON.stringify(projects));
   localStorage.setItem('betasocial_team', JSON.stringify(team));
+  localStorage.setItem('betasocial_adtext', adText);
 }
 function loadData() {
   try {
     const c = localStorage.getItem('betasocial_contents');
     const cl = localStorage.getItem('betasocial_clients');
     const pr = localStorage.getItem('betasocial_projects');
+    const tm = localStorage.getItem('betasocial_team');
+    const ad = localStorage.getItem('betasocial_adtext');
     if (c) contents = JSON.parse(c);
     if (cl) clients = JSON.parse(cl);
     if (pr) projects = JSON.parse(pr);
-          const tm = localStorage.getItem('betasocial_team');
-          if (tm) team = JSON.parse(tm);
+    if (tm) team = JSON.parse(tm);
+    if (ad) adText = ad;
   } catch(e) {}
 }
 loadData();
@@ -2231,6 +2288,7 @@ function switchRole(role) {
   document.getElementById('admin-only').style.display = (role === 'admin') ? '' : 'none';
   document.getElementById('designer-only').style.display = (role === 'designer') ? '' : 'none';
   document.getElementById('nav-calendar').style.display = (role === 'client') ? 'none' : '';
+  updateAdTicker();
   const newContentBtn = document.querySelector('[onclick="openModal(\'new-content\')"]');
   if (newContentBtn) newContentBtn.style.display = (role === 'client' || role === 'designer') ? 'none' : '';
   // Redirect designer to My Tasks on login
@@ -3145,6 +3203,49 @@ function renderReportList() {
     </div>`).join('');
 }
 
+// ─── AD TICKER ───────────────────────────────────────────────────────────────
+function updateAdTicker() {
+  const wrap = document.getElementById('ad-ticker');
+  if (!wrap) return;
+  if (currentRole === 'client') {
+    const t1 = document.getElementById('ad-ticker-text');
+    const t2 = document.getElementById('ad-ticker-text2');
+    if (t1) t1.textContent = adText;
+    if (t2) t2.textContent = adText;
+    wrap.classList.add('visible');
+  } else {
+    wrap.classList.remove('visible');
+  }
+}
+
+function openEditAdBanner() {
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header"><div class="modal-title">Edit Client Ad Banner</div><button class="modal-close" onclick="closeAllModals()">✕</button></div>
+    <div style="font-size:12.5px;color:var(--text3);margin-bottom:16px">This sliding text banner is shown to all client users at the top of their dashboard.</div>
+    <div class="form-group"><label>Banner Text</label><textarea class="form-control" id="ad-banner-input" rows="3" style="resize:vertical">${adText}</textarea></div>
+    <div style="margin-top:8px;padding:10px 14px;background:linear-gradient(90deg,#6c8fff,#a78bfa);border-radius:8px;overflow:hidden">
+      <div style="color:#fff;font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="ad-preview">${adText}</div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px">Preview (live):</div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAllModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdBanner()">Save Banner</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('ad-banner-input').addEventListener('input', function() {
+    document.getElementById('ad-preview').textContent = this.value || '(empty)';
+  });
+}
+
+function saveAdBanner() {
+  const val = (document.getElementById('ad-banner-input').value || '').trim();
+  if (!val) { showToast('Banner text cannot be empty.'); return; }
+  adText = val;
+  saveData();
+  closeAllModals();
+  showToast('Ad banner updated! ✓');
+}
+
 function downloadReport() { showToast('Generating full report PDF... ⬇'); }
 function downloadClientReport(name) { showToast(`Generating report for ${name}... ⬇`); }
 
@@ -3152,6 +3253,8 @@ function downloadClientReport(name) { showToast(`Generating report for ${name}..
 function renderTeamList() {
   const el = document.getElementById('team-list');
   if (!el) return;
+  const preview = document.getElementById('ad-preview-admin');
+  if (preview) preview.textContent = adText;
   const roleColors = {
     master_admin:'badge-active', admin:'badge-active',
     account_manager:'badge-review', client:'badge-draft', designer:'badge-scheduled'
