@@ -1,6 +1,6 @@
 {
-  "name": "BETA Social",
-  "short_name": "BETA Social",
+  "name": "Portal",
+  "short_name": "Portal",
   "description": "BETA Social Agency Dashboard",
   "start_url": "./agency-dashboard.html",
   "display": "standalone",
