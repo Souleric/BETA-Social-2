@@ -1843,11 +1843,11 @@
     <div class="login-sub">Sign in to your BETA Social account</div>
     <div class="login-field">
       <label>Username</label>
-      <input type="text" id="login-username" placeholder="Enter username" autocomplete="username">
+      <input type="text" id="login-username" placeholder="Enter username" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="login-field">
       <label>Password</label>
-      <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password">
+      <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false">
     </div>
     <div class="login-error" id="login-error"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
@@ -3743,7 +3743,7 @@ const USERS = {
 
 function doLogin() {
   const input    = document.getElementById('login-username').value.trim();
-  const password = document.getElementById('login-password').value;
+  const password = document.getElementById('login-password').value.trim();
   const errorEl  = document.getElementById('login-error');
   // Check team array by email or name
   const member = team.find(m => m.email.toLowerCase() === input.toLowerCase() || m.name.toLowerCase() === input.toLowerCase());
