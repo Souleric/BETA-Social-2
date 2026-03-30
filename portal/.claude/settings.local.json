@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git init)",
+      "Bash(git add .)",
+      "Bash(git commit -m \"Initial commit: BETA Social agency dashboard\")",
+      "Bash(git remote add origin https://github.com/Souleric/beta-social.git)",
+      "Bash(git branch -M main)",
+      "Bash(git push -u origin main)",
+      "Bash(gh auth status)",
+      "Bash(ssh -T git@github.com)",
+      "Bash(git remote set-url origin git@github.com:Souleric/beta-social.git)"
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "agency-dashboard",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/ericcheah/beta-social/deploy"],
+      "port": 3001,
+      "autoPort": true
+    }
+  ]
+}
